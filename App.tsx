@@ -295,6 +295,151 @@ const ProposalModal: React.FC<ProposalModalProps> = ({ request, onClose, onConfi
     );
 };
 
+// --- Mercado Pago Payment Simulation Modal ---
+interface PaymentModalProps {
+  booking: Booking;
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+const PaymentModal: React.FC<PaymentModalProps> = ({ booking, onClose, onSuccess }) => {
+    const [method, setMethod] = useState<'pix' | 'card'>('pix');
+    const [loading, setLoading] = useState(false);
+    const [step, setStep] = useState<'selection' | 'processing' | 'success'>('selection');
+
+    const handlePay = () => {
+        setLoading(true);
+        // Simulate API call to Mercado Pago
+        setTimeout(() => {
+            setLoading(false);
+            setStep('success');
+            setTimeout(() => {
+                onSuccess();
+            }, 1500);
+        }, 2000);
+    };
+
+    if (step === 'success') {
+        return (
+            <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+                <div className="bg-white rounded-3xl p-8 flex flex-col items-center justify-center shadow-2xl animate-in zoom-in-95">
+                    <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center text-4xl mb-4 animate-bounce">
+                        ✅
+                    </div>
+                    <h3 className="text-xl font-black text-slate-800 mb-2">Pagamento Aprovado!</h3>
+                    <p className="text-slate-500 text-center">Seu valor está seguro no cofre do app.</p>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+                {/* Header Mercado Pago Style */}
+                <div className="bg-[#009EE3] p-6 text-white flex justify-between items-start">
+                    <div>
+                        <span className="text-xs font-bold opacity-80 uppercase tracking-wider">Checkout</span>
+                        <h3 className="text-2xl font-black mt-1">R$ {booking.price},00</h3>
+                        <p className="text-sm opacity-90 mt-1">{booking.service} com {booking.proName}</p>
+                    </div>
+                    <button onClick={onClose} className="text-white/80 hover:text-white font-bold text-xl">✕</button>
+                </div>
+
+                <div className="p-6 overflow-y-auto">
+                    <div className="flex gap-2 mb-6 p-1 bg-slate-100 rounded-xl">
+                        <button 
+                            onClick={() => setMethod('pix')}
+                            className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${method === 'pix' ? 'bg-white text-[#009EE3] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                            💠 PIX
+                        </button>
+                        <button 
+                            onClick={() => setMethod('card')}
+                            className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${method === 'card' ? 'bg-white text-[#009EE3] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                            💳 Cartão
+                        </button>
+                    </div>
+
+                    {method === 'pix' ? (
+                        <div className="space-y-4 text-center">
+                            <div className="bg-slate-50 border-2 border-slate-200 border-dashed rounded-xl p-8 flex flex-col items-center justify-center">
+                                {/* Fake QR Code */}
+                                <div className="w-48 h-48 bg-white p-2 shadow-sm rounded-lg mb-4">
+                                    <div className="w-full h-full bg-[url('https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=SimulacaoPagamentoValeConecta')] bg-cover"></div>
+                                </div>
+                                <p className="text-sm text-slate-500 font-medium">Escaneie o QR Code no app do seu banco</p>
+                            </div>
+                            
+                            <div className="relative">
+                                <input 
+                                    readOnly 
+                                    value="00020126580014br.gov.bcb.pix0136123e4567-e89b-12d3-a456-426614174000" 
+                                    className="w-full bg-slate-100 border border-slate-200 rounded-lg py-3 px-4 text-xs text-slate-500 font-mono"
+                                />
+                                <button className="absolute right-2 top-2 text-xs font-bold text-[#009EE3] bg-blue-50 px-2 py-1 rounded hover:bg-blue-100">Copiar</button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="space-y-4 animate-in slide-in-from-right fade-in duration-300">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Número do Cartão</label>
+                                <input type="text" placeholder="0000 0000 0000 0000" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-[#009EE3]" />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Validade</label>
+                                    <input type="text" placeholder="MM/AA" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-[#009EE3]" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">CVV</label>
+                                    <input type="text" placeholder="123" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-[#009EE3]" />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Nome no Cartão</label>
+                                <input type="text" placeholder="COMO NO CARTAO" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-[#009EE3]" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Parcelas</label>
+                                <select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-[#009EE3]">
+                                    <option>1x de R$ {booking.price},00 sem juros</option>
+                                    <option>2x de R$ {(booking.price / 2).toFixed(2)} sem juros</option>
+                                    <option>3x de R$ {(booking.price / 3).toFixed(2)} sem juros</option>
+                                </select>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                <div className="p-6 border-t border-slate-100 bg-slate-50">
+                    <button 
+                        onClick={handlePay}
+                        disabled={loading}
+                        className="w-full bg-[#009EE3] text-white py-4 rounded-xl font-bold hover:brightness-95 transition-all shadow-lg shadow-blue-200 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                    >
+                        {loading ? (
+                            <>
+                                <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                                Processando...
+                            </>
+                        ) : (
+                            <>
+                                🔒 Pagar R$ {booking.price},00
+                            </>
+                        )}
+                    </button>
+                    <div className="text-center mt-3 flex items-center justify-center gap-1 text-[10px] text-slate-400">
+                        <span className="opacity-50">Protegido por</span>
+                        <span className="font-black text-slate-500">mercadopago</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // --- New Component: Service Request Modal (Create Demand) ---
 interface ServiceRequestModalProps {
   onClose: () => void;
@@ -1244,6 +1389,7 @@ const ClientDashboardView: React.FC<{
     onUpdateBookingStatus: (id: string, status: any) => void;
 }> = ({ bookings, requests, onRequestService, onNavigate, addToast, onUpdateBookingStatus }) => {
     const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
+    const [paymentBooking, setPaymentBooking] = useState<Booking | null>(null);
 
     return (
         <div className="max-w-7xl mx-auto px-4 py-8">
@@ -1304,12 +1450,7 @@ const ClientDashboardView: React.FC<{
                                     {/* Ações do Cliente */}
                                     {book.status === 'accepted' && (
                                         <button 
-                                            onClick={() => {
-                                                if(window.confirm(`Confirmar pagamento de R$ ${book.price}? O valor ficará retido até a conclusão do serviço.`)) {
-                                                    onUpdateBookingStatus(book.id, 'paid');
-                                                    addToast("Pagamento realizado! O valor está seguro no cofre do app.", "success");
-                                                }
-                                            }}
+                                            onClick={() => setPaymentBooking(book)}
                                             className="w-full py-2 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 transition-colors shadow-sm"
                                         >
                                             💳 Pagar Agora (Garantia Escrow)
@@ -1339,7 +1480,7 @@ const ClientDashboardView: React.FC<{
                 </div>
             </div>
 
-            {/* Render Modal */}
+            {/* Render Request Modal */}
             {isRequestModalOpen && (
                 <ServiceRequestModal 
                     onClose={() => setIsRequestModalOpen(false)} 
@@ -1347,6 +1488,19 @@ const ClientDashboardView: React.FC<{
                         onRequestService(req);
                         setIsRequestModalOpen(false);
                     }} 
+                />
+            )}
+
+            {/* Render Payment Modal */}
+            {paymentBooking && (
+                <PaymentModal
+                    booking={paymentBooking}
+                    onClose={() => setPaymentBooking(null)}
+                    onSuccess={() => {
+                        onUpdateBookingStatus(paymentBooking.id, 'paid');
+                        setPaymentBooking(null);
+                        addToast("Pagamento realizado! O valor está seguro no cofre do app.", "success");
+                    }}
                 />
             )}
         </div>
