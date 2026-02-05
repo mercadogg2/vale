@@ -4,7 +4,7 @@ import { ProCard } from './components/ProCard';
 import { UserRole, Professional, Booking, VerificationStatus, ReputationLevel, SubscriptionPlan, Plan, ServiceRequest } from './types';
 import { MOCK_PROS, SERVICES as SERVICE_CONSTANTS, CITIES as CITY_CONSTANTS } from './constants';
 import { getSmartServiceEstimate } from './services/geminiService';
-import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell } from 'recharts';
+import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell, PieChart, Pie } from 'recharts';
 
 // --- MOCK INITIAL DATA ---
 const INITIAL_REQUESTS: ServiceRequest[] = [
@@ -50,11 +50,11 @@ const INITIAL_BOOKINGS: Booking[] = [
     {
         id: 'b1',
         proId: '1',
-        clientId: 'me', // Associado ao usuário logado
+        clientId: 'me',
         clientName: 'Você',
         proName: 'Carlos Oliveira',
         service: 'Instalação Elétrica',
-        status: 'accepted', // Status que libera o pagamento
+        status: 'accepted',
         date: '2024-05-25',
         price: 150
     },
@@ -69,6 +69,42 @@ const INITIAL_BOOKINGS: Booking[] = [
         date: '2024-05-28',
         price: 200
     }
+];
+
+const INITIAL_PLANS: Plan[] = [
+  {
+    id: 'gratis',
+    name: 'Grátis',
+    price: '0,00',
+    period: 'mês',
+    fee: '15%',
+    color: 'bg-slate-100 border-slate-200',
+    buttonColor: 'bg-slate-600',
+    features: ['Perfil Básico', 'Máximo 3 serviços', 'Taxa de 15% por serviço'],
+    recommended: false
+  },
+  {
+    id: 'plus',
+    name: 'Plus',
+    price: '29,90',
+    period: 'mês',
+    fee: '10%',
+    color: 'bg-blue-50 border-blue-200',
+    buttonColor: 'bg-blue-600',
+    features: ['Perfil Destacado', 'Serviços Ilimitados', 'Taxa de 10% por serviço', 'Selo de Verificação'],
+    recommended: true
+  },
+  {
+    id: 'premium',
+    name: 'Premium',
+    price: '59,90',
+    period: 'mês',
+    fee: '5%',
+    color: 'bg-amber-50 border-amber-200',
+    buttonColor: 'bg-amber-600',
+    features: ['Topo das Buscas', 'Taxa de 5% por serviço', 'Suporte Prioritário', 'Gestão de Equipe'],
+    recommended: false
+  }
 ];
 
 // --- UI Components Helpers ---
@@ -189,7 +225,6 @@ const BookingModal: React.FC<BookingModalProps> = ({ pro, onClose, onConfirm }) 
                 />
               </div>
 
-              {/* Mensagem de Garantia/Trust (Anti-Leakage) */}
               <div className="bg-green-50 p-4 rounded-xl border border-green-100 flex gap-3 items-start">
                  <div className="text-green-600 text-xl mt-0.5">🛡️</div>
                  <div>
@@ -224,7 +259,7 @@ const BookingModal: React.FC<BookingModalProps> = ({ pro, onClose, onConfirm }) 
   );
 };
 
-// --- Proposal Modal (Pro sends to Client) ---
+// --- Proposal Modal ---
 interface ProposalModalProps {
   request: ServiceRequest;
   onClose: () => void;
@@ -361,7 +396,6 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ booking, onClose, onSuccess
     return (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
-                {/* Header Mercado Pago Style */}
                 <div className="bg-[#009EE3] p-6 text-white flex justify-between items-start">
                     <div>
                         <span className="text-xs font-bold opacity-80 uppercase tracking-wider">Checkout</span>
@@ -390,7 +424,6 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ booking, onClose, onSuccess
                     {method === 'pix' ? (
                         <div className="space-y-4 text-center">
                             <div className="bg-slate-50 border-2 border-slate-200 border-dashed rounded-xl p-8 flex flex-col items-center justify-center">
-                                {/* Fake QR Code */}
                                 <div className="w-48 h-48 bg-white p-2 shadow-sm rounded-lg mb-4">
                                     <div className="w-full h-full bg-[url('https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=SimulacaoPagamentoValeConecta')] bg-cover"></div>
                                 </div>
@@ -422,18 +455,6 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ booking, onClose, onSuccess
                                     <input type="text" placeholder="123" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-[#009EE3]" />
                                 </div>
                             </div>
-                            <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Nome no Cartão</label>
-                                <input type="text" placeholder="COMO NO CARTAO" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-[#009EE3]" />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Parcelas</label>
-                                <select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-[#009EE3]">
-                                    <option>1x de R$ {booking.price},00 sem juros</option>
-                                    <option>2x de R$ {(booking.price / 2).toFixed(2)} sem juros</option>
-                                    <option>3x de R$ {(booking.price / 3).toFixed(2)} sem juros</option>
-                                </select>
-                            </div>
                         </div>
                     )}
                 </div>
@@ -444,28 +465,15 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ booking, onClose, onSuccess
                         disabled={loading}
                         className="w-full bg-[#009EE3] text-white py-4 rounded-xl font-bold hover:brightness-95 transition-all shadow-lg shadow-blue-200 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                     >
-                        {loading ? (
-                            <>
-                                <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                                Processando...
-                            </>
-                        ) : (
-                            <>
-                                🔒 Pagar R$ {booking.price},00
-                            </>
-                        )}
+                        {loading ? 'Processando...' : `🔒 Pagar R$ ${booking.price},00`}
                     </button>
-                    <div className="text-center mt-3 flex items-center justify-center gap-1 text-[10px] text-slate-400">
-                        <span className="opacity-50">Protegido por</span>
-                        <span className="font-black text-slate-500">mercadopago</span>
-                    </div>
                 </div>
             </div>
         </div>
     );
 };
 
-// --- New Component: Service Request Modal (Create Demand) ---
+// --- Service Request Modal ---
 interface ServiceRequestModalProps {
   onClose: () => void;
   onConfirm: (request: Omit<ServiceRequest, 'id' | 'clientId' | 'status' | 'createdAt' | 'unlockedBy'>) => void;
@@ -495,7 +503,6 @@ const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ onClose, onCo
                     </div>
                     <button onClick={onClose} className="w-8 h-8 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center hover:bg-slate-300">✕</button>
                 </div>
-
                 <form onSubmit={handleSubmit} className="p-8 space-y-5">
                     <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase mb-2">O que você precisa?</label>
@@ -509,7 +516,6 @@ const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ onClose, onCo
                             {SERVICE_CONSTANTS.map(s => <option key={s} value={s}>{s}</option>)}
                         </select>
                     </div>
-
                     <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Cidade</label>
                         <select 
@@ -522,20 +528,18 @@ const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ onClose, onCo
                             {CITY_CONSTANTS.map(c => <option key={c} value={c}>{c}</option>)}
                         </select>
                     </div>
-
                     <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Detalhes do Pedido</label>
                         <textarea 
                             required
-                            placeholder="Descreva o serviço com detalhes. Ex: Pintar 3 quartos e 1 sala, paredes na cor branca..."
+                            placeholder="Descreva o serviço com detalhes..."
                             className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 h-28 resize-none"
                             value={formData.description}
                             onChange={e => setFormData({...formData, description: e.target.value})}
                         />
                     </div>
-
                     <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Seu WhatsApp (Contato)</label>
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Seu WhatsApp</label>
                         <input 
                             required
                             type="tel"
@@ -545,7 +549,6 @@ const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ onClose, onCo
                             onChange={e => setFormData({...formData, contactPhone: e.target.value})}
                         />
                     </div>
-
                     <div>
                          <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Urgência</label>
                          <div className="flex gap-2">
@@ -555,8 +558,8 @@ const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ onClose, onCo
                                     type="button"
                                     onClick={() => setFormData({...formData, urgency: u as any})}
                                     className={`flex-1 py-2 rounded-lg text-sm font-bold border transition-all ${formData.urgency === u 
-                                        ? (u === 'high' ? 'bg-red-500 text-white border-red-500' : u === 'medium' ? 'bg-amber-500 text-white border-amber-500' : 'bg-green-500 text-white border-green-500')
-                                        : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+                                        ? 'bg-blue-600 text-white' 
+                                        : 'bg-white text-slate-500 border-slate-200'
                                     }`}
                                  >
                                      {u === 'low' ? 'Baixa' : u === 'medium' ? 'Média' : 'Alta'}
@@ -564,15 +567,7 @@ const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({ onClose, onCo
                              ))}
                          </div>
                     </div>
-
-                    <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 text-xs text-blue-800">
-                        🔒 <strong>Segurança:</strong> Seu contato será revelado apenas para até 3 profissionais que usarem créditos para desbloqueá-lo.
-                    </div>
-
-                    <button 
-                        type="submit"
-                        className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 mt-2"
-                    >
+                    <button type="submit" className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold hover:bg-blue-700 transition-colors shadow-lg mt-2">
                         Publicar Pedido Agora
                     </button>
                 </form>
@@ -638,34 +633,20 @@ const PlanEditorModal: React.FC<PlanEditorModalProps> = ({ plan, onClose, onSave
                <label htmlFor="recommended" className="font-bold text-slate-700">Marcar como Recomendado</label>
             </div>
           </div>
-          
           <div>
-            <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Estilo do Cartão (Classes CSS)</label>
-            <select 
-              value={formData.color} 
-              onChange={e => setFormData({...formData, color: e.target.value})} 
-              className="w-full p-2 border rounded-lg mb-2"
-            >
+            <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Estilo do Cartão</label>
+            <select value={formData.color} onChange={e => setFormData({...formData, color: e.target.value})} className="w-full p-2 border rounded-lg mb-2">
                <option value="bg-slate-100 border-slate-200">Cinza (Padrão)</option>
                <option value="bg-blue-50 border-blue-200">Azul (Plus)</option>
                <option value="bg-amber-50 border-amber-200">Amarelo/Ouro (Premium)</option>
-               <option value="bg-emerald-50 border-emerald-200">Verde (Ecológico/Especial)</option>
-               <option value="bg-purple-50 border-purple-200">Roxo (Vip)</option>
             </select>
           </div>
-
           <div>
              <label className="block text-xs font-bold uppercase text-slate-500 mb-2">Lista de Vantagens</label>
              <div className="space-y-2">
                {formData.features.map((feat, idx) => (
                  <div key={idx} className="flex gap-2">
-                   <input 
-                    type="text" 
-                    value={feat} 
-                    onChange={e => handleFeatureChange(idx, e.target.value)}
-                    className="flex-grow p-2 border rounded-lg text-sm"
-                    placeholder="Ex: Suporte 24h"
-                   />
+                   <input type="text" value={feat} onChange={e => handleFeatureChange(idx, e.target.value)} className="flex-grow p-2 border rounded-lg text-sm" />
                    <button onClick={() => removeFeature(idx)} className="text-red-500 hover:bg-red-50 p-2 rounded">🗑️</button>
                  </div>
                ))}
@@ -682,52 +663,128 @@ const PlanEditorModal: React.FC<PlanEditorModalProps> = ({ plan, onClose, onSave
   );
 };
 
+// --- Profile Editor Modal ---
+interface ProfileEditorModalProps {
+  pro: Professional;
+  onClose: () => void;
+  onSave: (updatedPro: Professional) => void;
+}
 
-// --- DATA & HELPER FUNCTIONS ---
+const ProfileEditorModal: React.FC<ProfileEditorModalProps> = ({ pro, onClose, onSave }) => {
+  const [formData, setFormData] = useState<Professional>({ ...pro });
 
-const INITIAL_PLANS: Plan[] = [
-  {
-    id: 'gratis',
-    name: 'Grátis',
-    price: '0',
-    period: 'mês',
-    fee: '15%',
-    color: 'bg-slate-100 border-slate-200',
-    buttonColor: 'bg-slate-600',
-    features: ['Perfil Básico', 'Máximo 3 serviços', 'Taxa de 15% por serviço'],
-    recommended: false
-  },
-  {
-    id: 'plus',
-    name: 'Plus',
-    price: '29,90',
-    period: 'mês',
-    fee: '10%',
-    color: 'bg-blue-50 border-blue-200',
-    buttonColor: 'bg-blue-600',
-    features: ['Perfil Destacado', 'Serviços Ilimitados', 'Taxa de 10% por serviço', 'Selo de Verificação'],
-    recommended: true
-  },
-  {
-    id: 'premium',
-    name: 'Premium',
-    price: '59,90',
-    period: 'mês',
-    fee: '5%',
-    color: 'bg-amber-50 border-amber-200',
-    buttonColor: 'bg-amber-600',
-    features: ['Topo das Buscas', 'Taxa de 5% por serviço', 'Suporte Prioritário', 'Gestão de Equipe'],
-    recommended: false
-  }
-];
+  const handleServiceToggle = (service: string) => {
+    const services = formData.services.includes(service)
+      ? formData.services.filter(s => s !== service)
+      : [...formData.services, service];
+    setFormData({ ...formData, services });
+  };
 
+  const handleCityToggle = (city: string) => {
+    const cities = formData.cities.includes(city)
+      ? formData.cities.filter(c => c !== city)
+      : [...formData.cities, city];
+    setFormData({ ...formData, cities });
+  };
+
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
+      <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div className="p-6 border-b sticky top-0 bg-white z-10 flex justify-between items-center">
+          <h3 className="text-xl font-black text-slate-800">Editar Perfil</h3>
+          <button onClick={onClose} className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center">✕</button>
+        </div>
+        
+        <div className="p-6 space-y-6">
+            {/* Basic Info */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Nome Completo</label>
+                    <input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                 <div>
+                    <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Foto (URL)</label>
+                    <input type="text" value={formData.photo} onChange={e => setFormData({...formData, photo: e.target.value})} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+            </div>
+
+            {/* Description */}
+            <div>
+                <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Sobre Você</label>
+                <textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 h-24 resize-none" />
+            </div>
+
+            {/* Business Info */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Preço Base (Visita)</label>
+                    <input type="number" value={formData.basePrice} onChange={e => setFormData({...formData, basePrice: Number(e.target.value)})} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                 <div>
+                    <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Chave PIX</label>
+                    <input type="text" value={formData.pixKey || ''} onChange={e => setFormData({...formData, pixKey: e.target.value})} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" placeholder="CPF, Email ou Aleatória" />
+                </div>
+            </div>
+
+            {/* Services */}
+            <div>
+                <label className="block text-xs font-bold uppercase text-slate-500 mb-2">Especialidades</label>
+                <div className="flex flex-wrap gap-2">
+                    {SERVICE_CONSTANTS.map(s => (
+                        <button 
+                            key={s}
+                            onClick={() => handleServiceToggle(s)}
+                            className={`px-3 py-1 rounded-full text-xs font-bold border transition-colors ${
+                                formData.services.includes(s) 
+                                ? 'bg-blue-600 text-white border-blue-600' 
+                                : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300'
+                            }`}
+                        >
+                            {s}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+             {/* Cities */}
+             <div>
+                <label className="block text-xs font-bold uppercase text-slate-500 mb-2">Cidades de Atuação</label>
+                <div className="flex flex-wrap gap-2">
+                    {CITY_CONSTANTS.map(c => (
+                        <button 
+                            key={c}
+                            onClick={() => handleCityToggle(c)}
+                            className={`px-3 py-1 rounded-full text-xs font-bold border transition-colors ${
+                                formData.cities.includes(c) 
+                                ? 'bg-green-600 text-white border-green-600' 
+                                : 'bg-white text-slate-600 border-slate-200 hover:border-green-300'
+                            }`}
+                        >
+                            {c}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+        </div>
+
+        <div className="p-6 border-t bg-slate-50 flex justify-end gap-3 rounded-b-2xl">
+          <button onClick={onClose} className="px-6 py-3 text-slate-600 font-bold hover:bg-slate-200 rounded-xl transition-colors">Cancelar</button>
+          <button onClick={() => onSave(formData)} className="px-8 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 transition-colors">Salvar Alterações</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- HELPER ---
 const getReputationInfo = (p: Professional) => {
     if (p.reviewCount >= 100 && p.rating >= 4.9) return { level: 'Diamante', color: 'bg-cyan-500', icon: '💎' };
     if (p.reviewCount >= 50 && p.rating >= 4.8) return { level: 'Ouro', color: 'bg-yellow-400', icon: '🏆' };
     if (p.reviewCount >= 30 && p.rating >= 4.5) return { level: 'Prata', color: 'bg-slate-400', icon: '🥈' };
     if (p.reviewCount >= 10 && p.rating >= 4.0) return { level: 'Bronze', color: 'bg-amber-700', icon: '🥉' };
     return { level: 'Novato', color: 'bg-slate-500', icon: '🛡️' };
-  };
+};
 
 // --- VIEWS ---
 
@@ -736,224 +793,50 @@ const ProfessionalsListView: React.FC<{
     onViewProfile: (pro: Professional) => void;
 }> = ({ addToast, onViewProfile }) => {
     const [searchTerm, setSearchTerm] = useState('');
-    
-    // Filter States
     const [selectedServices, setSelectedServices] = useState<string[]>([]);
     const [selectedCities, setSelectedCities] = useState<string[]>([]);
-    const [maxPrice, setMaxPrice] = useState<number>(300);
-    const [minRating, setMinRating] = useState<number>(0);
-    
-    // State for Mobile Filter Toggle
     const [showFilters, setShowFilters] = useState(false);
 
     const filteredPros = useMemo(() => {
         return MOCK_PROS.filter(p => {
-            // Text Search
             const matchText = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                               p.services.some(s => s.toLowerCase().includes(searchTerm.toLowerCase()));
-            
-            // City
             const matchCity = selectedCities.length === 0 || p.cities.some(c => selectedCities.includes(c));
-
-            // Category (Service)
             const matchService = selectedServices.length === 0 || p.services.some(s => selectedServices.includes(s));
-
-            // Price
-            const matchPrice = p.basePrice <= maxPrice;
-
-            // Rating
-            const matchRating = p.rating >= minRating;
-
-            return matchText && matchCity && matchService && matchPrice && matchRating;
+            return matchText && matchCity && matchService;
         });
-    }, [searchTerm, selectedCities, selectedServices, maxPrice, minRating]);
-
-    const handleToggleService = (service: string) => {
-        if (selectedServices.includes(service)) {
-            setSelectedServices(selectedServices.filter(s => s !== service));
-        } else {
-            setSelectedServices([...selectedServices, service]);
-        }
-    };
-
-    const handleToggleCity = (city: string) => {
-        if (selectedCities.includes(city)) {
-            setSelectedCities(selectedCities.filter(c => c !== city));
-        } else {
-            setSelectedCities([...selectedCities, city]);
-        }
-    };
-
-    const clearFilters = () => {
-        setSearchTerm('');
-        setSelectedCities([]);
-        setSelectedServices([]);
-        setMaxPrice(300);
-        setMinRating(0);
-    };
+    }, [searchTerm, selectedCities, selectedServices]);
 
     return (
         <div className="max-w-7xl mx-auto px-4 py-8 min-h-screen">
             <h1 className="text-3xl font-black text-slate-800 mb-8">Todos os Profissionais</h1>
-
             <div className="flex flex-col lg:flex-row gap-8">
-                {/* Mobile Filter Toggle Button */}
-                <button
-                    onClick={() => setShowFilters(!showFilters)}
-                    className="lg:hidden w-full mb-2 bg-white p-4 rounded-2xl border border-slate-200 font-bold text-slate-700 shadow-sm flex justify-between items-center"
-                >
-                    <span className="flex items-center gap-2">
-                        <span>⚙️</span> Filtros
-                        {filteredPros.length > 0 && <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs ml-2">{filteredPros.length} resultados</span>}
-                    </span>
-                    <span className="text-slate-400">{showFilters ? '▲' : '▼'}</span>
+                <button onClick={() => setShowFilters(!showFilters)} className="lg:hidden w-full mb-2 bg-white p-4 rounded-2xl border border-slate-200 font-bold text-slate-700 shadow-sm flex justify-between items-center">
+                    <span>⚙️ Filtros</span>
                 </button>
-
-                {/* --- Sidebar Filters --- */}
                 <aside className={`w-full lg:w-72 shrink-0 space-y-8 transition-all duration-300 ${showFilters ? 'block' : 'hidden lg:block'}`}>
-                    {/* Filtros Container */}
                     <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-6">
-                        <div className="flex justify-between items-center">
-                            <h3 className="font-bold text-lg text-slate-800">Filtros</h3>
-                            <button onClick={clearFilters} className="text-xs font-bold text-blue-600 hover:text-blue-800">Limpar</button>
-                        </div>
-
-                        {/* Categorias */}
+                        <h3 className="font-bold text-lg text-slate-800">Filtros</h3>
                         <div>
                             <h4 className="text-xs font-bold text-slate-500 uppercase mb-3">Categorias</h4>
-                            <div className="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
-                                {SERVICE_CONSTANTS.map(service => (
-                                    <label key={service} className="flex items-center gap-2 cursor-pointer group">
-                                        <input 
-                                            type="checkbox" 
-                                            className="w-4 h-4 accent-blue-600 rounded"
-                                            checked={selectedServices.includes(service)}
-                                            onChange={() => handleToggleService(service)}
-                                        />
-                                        <span className={`text-sm group-hover:text-blue-600 ${selectedServices.includes(service) ? 'text-slate-900 font-medium' : 'text-slate-600'}`}>
-                                            {service}
-                                        </span>
-                                    </label>
-                                ))}
-                            </div>
-                        </div>
-
-                        <hr className="border-slate-100" />
-
-                        {/* Cidades - Filtro Lateral */}
-                        <div>
-                            <h4 className="text-xs font-bold text-slate-500 uppercase mb-3">Cidades (Vale do Ribeira)</h4>
-                            <div className="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
-                                {CITY_CONSTANTS.map(city => (
-                                    <label key={city} className="flex items-center gap-2 cursor-pointer group">
-                                        <input 
-                                            type="checkbox" 
-                                            className="w-4 h-4 accent-blue-600 rounded"
-                                            checked={selectedCities.includes(city)}
-                                            onChange={() => handleToggleCity(city)}
-                                        />
-                                        <span className={`text-sm group-hover:text-blue-600 ${selectedCities.includes(city) ? 'text-slate-900 font-medium' : 'text-slate-600'}`}>
-                                            {city}
-                                        </span>
-                                    </label>
-                                ))}
-                            </div>
-                        </div>
-
-                        <hr className="border-slate-100" />
-
-                        {/* Preço */}
-                        <div>
-                            <div className="flex justify-between items-center mb-2">
-                                <h4 className="text-xs font-bold text-slate-500 uppercase">Preço Máximo</h4>
-                                <span className="text-sm font-bold text-slate-800">R$ {maxPrice}</span>
-                            </div>
-                            <input 
-                                type="range" 
-                                min="50" 
-                                max="500" 
-                                step="10" 
-                                value={maxPrice} 
-                                onChange={(e) => setMaxPrice(Number(e.target.value))}
-                                className="w-full accent-blue-600 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
-                            />
-                            <div className="flex justify-between text-[10px] text-slate-400 mt-1">
-                                <span>R$ 50</span>
-                                <span>R$ 500+</span>
-                            </div>
-                        </div>
-
-                        <hr className="border-slate-100" />
-
-                        {/* Avaliação */}
-                        <div>
-                            <h4 className="text-xs font-bold text-slate-500 uppercase mb-3">Avaliação Mínima</h4>
-                            <div className="space-y-2">
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                    <input 
-                                        type="radio" 
-                                        name="rating" 
-                                        className="w-4 h-4 accent-blue-600"
-                                        checked={minRating === 0}
-                                        onChange={() => setMinRating(0)}
-                                    />
-                                    <span className="text-sm text-slate-600">Todas</span>
+                            {SERVICE_CONSTANTS.map(service => (
+                                <label key={service} className="flex items-center gap-2 cursor-pointer group mb-2">
+                                    <input type="checkbox" className="w-4 h-4 accent-blue-600 rounded" checked={selectedServices.includes(service)} onChange={() => {
+                                        if (selectedServices.includes(service)) setSelectedServices(selectedServices.filter(s => s !== service));
+                                        else setSelectedServices([...selectedServices, service]);
+                                    }}/>
+                                    <span className="text-sm text-slate-600">{service}</span>
                                 </label>
-                                {[3, 4, 5].map(star => (
-                                    <label key={star} className="flex items-center gap-2 cursor-pointer">
-                                        <input 
-                                            type="radio" 
-                                            name="rating" 
-                                            className="w-4 h-4 accent-blue-600"
-                                            checked={minRating === star}
-                                            onChange={() => setMinRating(star)}
-                                        />
-                                        <span className="text-sm text-slate-600 flex items-center">
-                                            {star}+ <span className="text-amber-400 ml-1">★</span>
-                                        </span>
-                                    </label>
-                                ))}
-                            </div>
+                            ))}
                         </div>
                     </div>
                 </aside>
-
-                {/* --- Main Content --- */}
                 <div className="flex-grow">
-                    {/* Top Bar (Search Only) */}
                     <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm mb-6">
-                        <input 
-                            type="text" 
-                            placeholder="Buscar por nome ou serviço..." 
-                            className="w-full h-10 px-4 rounded-lg bg-slate-50 border-none outline-none focus:ring-2 focus:ring-blue-500"
-                            value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
-                        />
+                        <input type="text" placeholder="Buscar por nome ou serviço..." className="w-full h-10 px-4 rounded-lg bg-slate-50 border-none outline-none focus:ring-2 focus:ring-blue-500" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                     </div>
-
-                    {/* Results Count */}
-                    <p className="text-sm text-slate-500 mb-4 font-medium hidden lg:block">
-                        Encontrados {filteredPros.length} profissionais
-                    </p>
-
-                    {/* Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                        {filteredPros.map((pro, index) => (
-                            <ProCard 
-                                key={pro.id} 
-                                pro={pro} 
-                                rank={index + 1}
-                                onSelect={() => onViewProfile(pro)} 
-                            />
-                        ))}
-                        {filteredPros.length === 0 && (
-                            <div className="col-span-full flex flex-col items-center justify-center py-16 text-slate-400 bg-white rounded-2xl border border-dashed border-slate-200">
-                                <span className="text-4xl mb-2">🔍</span>
-                                <p className="font-bold">Nenhum profissional encontrado</p>
-                                <p className="text-sm">Tente ajustar os filtros ao lado.</p>
-                                <button onClick={clearFilters} className="mt-4 text-blue-600 text-sm font-bold hover:underline">Limpar Filtros</button>
-                            </div>
-                        )}
+                        {filteredPros.map((pro, index) => <ProCard key={pro.id} pro={pro} rank={index + 1} onSelect={() => onViewProfile(pro)} />)}
                     </div>
                 </div>
             </div>
@@ -965,194 +848,151 @@ const ServiceRequestsListView: React.FC<{
     requests: ServiceRequest[],
     onViewRequest: (req: ServiceRequest) => void,
     addToast: (msg: string, type: 'success' | 'error' | 'info') => void
-}> = ({ requests, onViewRequest, addToast }) => {
-    const [searchTerm, setSearchTerm] = useState('');
-    const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-    const [selectedCities, setSelectedCities] = useState<string[]>([]);
-    const [urgencyFilter, setUrgencyFilter] = useState<'all' | 'low' | 'medium' | 'high'>('all');
-    
-    // State for Mobile Filter Toggle
-    const [showFilters, setShowFilters] = useState(false);
-
-    const filteredRequests = useMemo(() => {
-        return requests.filter(req => {
-            const matchText = req.description.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                              req.category.toLowerCase().includes(searchTerm.toLowerCase());
-            const matchCity = selectedCities.length === 0 || selectedCities.includes(req.city);
-            const matchCategory = selectedCategories.length === 0 || selectedCategories.includes(req.category);
-            const matchUrgency = urgencyFilter === 'all' || req.urgency === urgencyFilter;
-
-            return matchText && matchCity && matchCategory && matchUrgency && req.status === 'open';
-        });
-    }, [requests, searchTerm, selectedCities, selectedCategories, urgencyFilter]);
-
-    const handleToggleCategory = (cat: string) => {
-        if (selectedCategories.includes(cat)) {
-            setSelectedCategories(selectedCategories.filter(c => c !== cat));
-        } else {
-            setSelectedCategories([...selectedCategories, cat]);
-        }
-    };
-
-    const handleToggleCity = (city: string) => {
-        if (selectedCities.includes(city)) {
-            setSelectedCities(selectedCities.filter(c => c !== city));
-        } else {
-            setSelectedCities([...selectedCities, city]);
-        }
-    };
-
-    const clearFilters = () => {
-        setSearchTerm('');
-        setSelectedCities([]);
-        setSelectedCategories([]);
-        setUrgencyFilter('all');
-    };
-
+}> = ({ requests, onViewRequest }) => {
     return (
         <div className="max-w-7xl mx-auto px-4 py-8 min-h-screen">
             <h1 className="text-3xl font-black text-slate-800 mb-8">Mural de Pedidos</h1>
-            
-            <div className="flex flex-col lg:flex-row gap-8">
-                {/* Mobile Filter Toggle Button */}
-                <button
-                    onClick={() => setShowFilters(!showFilters)}
-                    className="lg:hidden w-full mb-2 bg-white p-4 rounded-2xl border border-slate-200 font-bold text-slate-700 shadow-sm flex justify-between items-center"
-                >
-                    <span className="flex items-center gap-2">
-                        <span>⚙️</span> Filtros
-                        {filteredRequests.length > 0 && <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs ml-2">{filteredRequests.length} resultados</span>}
-                    </span>
-                    <span className="text-slate-400">{showFilters ? '▲' : '▼'}</span>
-                </button>
-
-                {/* Filters Sidebar */}
-                <aside className={`w-full lg:w-72 shrink-0 space-y-8 transition-all duration-300 ${showFilters ? 'block' : 'hidden lg:block'}`}>
-                     <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-6">
-                        <div className="flex justify-between items-center">
-                            <h3 className="font-bold text-lg text-slate-800">Filtros</h3>
-                            <button onClick={clearFilters} className="text-xs font-bold text-blue-600 hover:text-blue-800">Limpar</button>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {requests.map(req => (
+                    <div key={req.id} className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow flex flex-col">
+                        <div className="flex justify-between items-start mb-4">
+                            <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-lg text-xs font-bold uppercase">{req.category}</span>
+                            <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${req.urgency === 'high' ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}>
+                                Urgência {req.urgency}
+                            </span>
                         </div>
-
-                         {/* Urgency */}
-                        <div>
-                            <h4 className="text-xs font-bold text-slate-500 uppercase mb-3">Urgência</h4>
-                            <div className="space-y-2">
-                                {['all', 'low', 'medium', 'high'].map(u => (
-                                    <label key={u} className="flex items-center gap-2 cursor-pointer">
-                                        <input 
-                                            type="radio" 
-                                            name="urgency" 
-                                            className="w-4 h-4 accent-blue-600"
-                                            checked={urgencyFilter === u}
-                                            onChange={() => setUrgencyFilter(u as any)}
-                                        />
-                                        <span className="text-sm text-slate-600 capitalize">
-                                            {u === 'all' ? 'Todas' : u === 'low' ? 'Baixa' : u === 'medium' ? 'Média' : 'Alta'}
-                                        </span>
-                                    </label>
-                                ))}
-                            </div>
-                        </div>
-
-                        <hr className="border-slate-100" />
-
-                        {/* Cities */}
-                        <div>
-                            <h4 className="text-xs font-bold text-slate-500 uppercase mb-3">Cidades (Vale do Ribeira)</h4>
-                            <div className="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
-                                {CITY_CONSTANTS.map(city => (
-                                    <label key={city} className="flex items-center gap-2 cursor-pointer group">
-                                        <input 
-                                            type="checkbox" 
-                                            className="w-4 h-4 accent-blue-600 rounded"
-                                            checked={selectedCities.includes(city)}
-                                            onChange={() => handleToggleCity(city)}
-                                        />
-                                        <span className={`text-sm group-hover:text-blue-600 ${selectedCities.includes(city) ? 'text-slate-900 font-medium' : 'text-slate-600'}`}>
-                                            {city}
-                                        </span>
-                                    </label>
-                                ))}
-                            </div>
-                        </div>
-
-                        <hr className="border-slate-100" />
-
-                        {/* Categories */}
-                        <div>
-                            <h4 className="text-xs font-bold text-slate-500 uppercase mb-3">Categorias</h4>
-                            <div className="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
-                                {SERVICE_CONSTANTS.map(cat => (
-                                    <label key={cat} className="flex items-center gap-2 cursor-pointer group">
-                                        <input 
-                                            type="checkbox" 
-                                            className="w-4 h-4 accent-blue-600 rounded"
-                                            checked={selectedCategories.includes(cat)}
-                                            onChange={() => handleToggleCategory(cat)}
-                                        />
-                                        <span className={`text-sm group-hover:text-blue-600 ${selectedCategories.includes(cat) ? 'text-slate-900 font-medium' : 'text-slate-600'}`}>
-                                            {cat}
-                                        </span>
-                                    </label>
-                                ))}
-                            </div>
-                        </div>
+                        <p className="text-slate-800 font-medium mb-4">{req.description}</p>
+                        <button onClick={() => onViewRequest(req)} className="w-full py-3 bg-slate-50 text-slate-700 font-bold rounded-xl hover:bg-slate-100 border border-slate-200 transition-colors">Ver Detalhes</button>
                     </div>
-                </aside>
+                ))}
+            </div>
+        </div>
+    );
+};
 
-                {/* Main Content */}
-                <div className="flex-grow">
-                     {/* Search Bar */}
-                    <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm mb-6">
-                        <input 
-                            type="text" 
-                            placeholder="Buscar por descrição ou categoria..." 
-                            className="w-full h-10 px-4 rounded-lg bg-slate-50 border-none outline-none focus:ring-2 focus:ring-blue-500"
-                            value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
-                        />
+// --- NEW COMPONENT: ServiceRequestDetailsView ---
+const ServiceRequestDetailsView: React.FC<{
+    request: ServiceRequest;
+    onBack: () => void;
+    addToast: (msg: string, type: 'success' | 'error' | 'info') => void;
+    userRole: UserRole;
+    currentPro: Professional | null;
+    onUnlockContact: (reqId: string, cost: number) => void;
+}> = ({ request, onBack, addToast, userRole, currentPro, onUnlockContact }) => {
+    const [showProposalModal, setShowProposalModal] = useState(false);
+    const UNLOCK_COST = 50;
+
+    const isUnlocked = userRole === 'pro' && currentPro && request.unlockedBy.includes(currentPro.id);
+
+    return (
+        <div className="max-w-4xl mx-auto px-4 py-8 animate-in fade-in duration-300">
+             <button onClick={onBack} className="group mb-6 flex items-center gap-2 text-slate-500 hover:text-blue-600 font-bold transition-colors">
+                <span className="group-hover:-translate-x-1 transition-transform">←</span> Voltar para lista
+             </button>
+
+             <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                    <div>
+                        <div className="flex items-center gap-2 mb-2">
+                             <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide">{request.category}</span>
+                             <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${request.urgency === 'high' ? 'bg-red-100 text-red-600' : request.urgency === 'medium' ? 'bg-amber-100 text-amber-600' : 'bg-green-100 text-green-600'}`}>
+                                Urgência {request.urgency === 'high' ? 'Alta' : request.urgency === 'medium' ? 'Média' : 'Baixa'}
+                             </span>
+                        </div>
+                        <h1 className="text-2xl md:text-3xl font-black text-slate-800">Pedido #{request.id.slice(-4)}</h1>
+                        <p className="text-slate-500 font-medium flex items-center gap-1 mt-1">
+                           📍 {request.city} • <span className="text-xs">Postado em {new Date(request.createdAt).toLocaleDateString()}</span>
+                        </p>
                     </div>
+                    <button 
+                        onClick={() => setShowProposalModal(true)}
+                        className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95"
+                    >
+                        Enviar Proposta
+                    </button>
+                </div>
 
-                    <p className="text-sm text-slate-500 mb-4 font-medium hidden lg:block">
-                        {filteredRequests.length} oportunidades encontradas
-                    </p>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {filteredRequests.map(req => (
-                            <div key={req.id} className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow flex flex-col">
-                                <div className="flex justify-between items-start mb-4">
-                                    <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-lg text-xs font-bold uppercase">{req.category}</span>
-                                    <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${req.urgency === 'high' ? 'bg-red-100 text-red-600' : req.urgency === 'medium' ? 'bg-amber-100 text-amber-600' : 'bg-green-100 text-green-600'}`}>
-                                        Urgência {req.urgency === 'low' ? 'Baixa' : req.urgency === 'medium' ? 'Média' : 'Alta'}
-                                    </span>
+                {userRole === 'pro' && currentPro && (
+                    <div className="mb-6">
+                        {isUnlocked ? (
+                            <div className="bg-green-50 border border-green-200 p-6 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-4">
+                                <div>
+                                    <h3 className="text-sm font-bold text-green-800 uppercase mb-1">Contato do Cliente</h3>
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-2xl font-black text-slate-800">{request.contactPhone || '(13) 99999-9999'}</span>
+                                        <span className="bg-green-200 text-green-800 text-xs px-2 py-1 rounded font-bold">Desbloqueado</span>
+                                    </div>
+                                    <p className="text-sm text-green-700 mt-1">Você já pode entrar em contato diretamente.</p>
                                 </div>
-                                <p className="text-slate-800 font-medium mb-4 line-clamp-3 flex-grow">{req.description}</p>
-                                
-                                <div className="flex items-center text-xs text-slate-500 mb-6">
-                                    <span>📍 {req.city}</span>
-                                    <span className="mx-2">•</span>
-                                    <span>Criado em: {new Date(req.createdAt).toLocaleDateString()}</span>
-                                </div>
-
-                                <button 
-                                    onClick={() => onViewRequest(req)}
-                                    className="w-full py-3 bg-slate-50 text-slate-700 font-bold rounded-xl hover:bg-slate-100 border border-slate-200 transition-colors"
+                                <a 
+                                    href={`https://wa.me/55${request.contactPhone?.replace(/\D/g,'') || ''}`} 
+                                    target="_blank" 
+                                    rel="noreferrer" 
+                                    className="bg-[#25D366] text-white px-6 py-3 rounded-xl font-bold hover:brightness-105 transition-all shadow-lg flex items-center gap-2"
                                 >
-                                    Ver Detalhes
-                                </button>
+                                    <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                                    Conversar no WhatsApp
+                                </a>
                             </div>
-                        ))}
-                         {filteredRequests.length === 0 && (
-                            <div className="col-span-full flex flex-col items-center justify-center py-16 text-slate-400 bg-white rounded-2xl border border-dashed border-slate-200">
-                                <span className="text-4xl mb-2">🔍</span>
-                                <p className="font-bold">Nenhum pedido encontrado</p>
-                                <button onClick={clearFilters} className="mt-4 text-blue-600 text-sm font-bold hover:underline">Limpar Filtros</button>
+                        ) : (
+                            <div className="bg-slate-50 border border-slate-200 p-6 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-4">
+                                <div>
+                                    <h3 className="text-sm font-bold text-slate-500 uppercase mb-1">Contato do Cliente</h3>
+                                    <p className="text-slate-600 mb-2">Desbloqueie para ver o telefone e WhatsApp.</p>
+                                    <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
+                                        <span>💰 Custo: {UNLOCK_COST} créditos</span>
+                                        <span>•</span>
+                                        <span>Seu saldo: {currentPro.credits} créditos</span>
+                                    </div>
+                                </div>
+                                <button 
+                                    onClick={() => onUnlockContact(request.id, UNLOCK_COST)}
+                                    disabled={currentPro.credits < UNLOCK_COST}
+                                    className="bg-amber-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-amber-200 hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                >
+                                    Desbloquear Contato
+                                </button>
                             </div>
                         )}
                     </div>
+                )}
+
+                <hr className="border-slate-100 my-6" />
+
+                <div className="space-y-6">
+                    <div>
+                        <h3 className="text-sm font-bold text-slate-500 uppercase mb-2">Descrição do Serviço</h3>
+                        <p className="text-slate-800 text-lg leading-relaxed bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                            {request.description}
+                        </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="bg-slate-50 p-5 rounded-xl border border-slate-100">
+                            <h3 className="text-xs font-bold text-slate-400 uppercase mb-1">Status</h3>
+                            <p className="font-bold text-slate-700 flex items-center gap-2">
+                                <span className={`w-2 h-2 rounded-full ${request.status === 'open' ? 'bg-green-500' : 'bg-slate-400'}`}></span>
+                                {request.status === 'open' ? 'Aberto para propostas' : 'Fechado'}
+                            </p>
+                        </div>
+                         <div className="bg-slate-50 p-5 rounded-xl border border-slate-100">
+                            <h3 className="text-xs font-bold text-slate-400 uppercase mb-1">Interessados</h3>
+                            <p className="font-bold text-slate-700">{request.unlockedBy.length} profissionais visualizaram</p>
+                        </div>
+                    </div>
                 </div>
-            </div>
+             </div>
+
+             {showProposalModal && (
+                <ProposalModal 
+                    request={request} 
+                    onClose={() => setShowProposalModal(false)} 
+                    onConfirm={(details) => {
+                        setShowProposalModal(false);
+                        addToast("Proposta enviada com sucesso!", "success");
+                    }} 
+                />
+             )}
         </div>
     );
 };
@@ -1163,65 +1003,122 @@ const ProfessionalProfileView: React.FC<{
     addToast: (msg: string, type: 'success' | 'error' | 'info') => void;
 }> = ({ pro, onBack, addToast }) => {
     const [showBooking, setShowBooking] = useState(false);
-    const reputation = getReputationInfo(pro);
+
+    // Helper to render stars
+    const renderStars = (rating: number) => {
+        return "★".repeat(Math.floor(rating)) + "☆".repeat(5 - Math.floor(rating));
+    };
 
     return (
-        <div className="max-w-4xl mx-auto px-4 py-8">
-             <button onClick={onBack} className="mb-4 text-slate-500 hover:text-slate-800 font-bold">← Voltar</button>
-             <div className="bg-white rounded-3xl overflow-hidden shadow-lg border border-slate-100">
-                <div className="h-48 bg-slate-200 relative">
-                     <img src={pro.photo} alt={pro.name} className="w-full h-full object-cover opacity-50" />
-                     <div className="absolute -bottom-12 left-8">
-                        <img src={pro.photo} alt={pro.name} className="w-32 h-32 rounded-full border-4 border-white shadow-md" />
-                     </div>
-                </div>
-                <div className="pt-16 pb-8 px-8">
-                    <div className="flex justify-between items-start mb-4">
-                        <div>
-                            <h1 className="text-3xl font-black text-slate-800">{pro.name}</h1>
-                            <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-bold text-white ${reputation.color} mt-2`}>
-                                {reputation.icon} {reputation.level}
+        <div className="max-w-5xl mx-auto px-4 py-8 animate-in fade-in duration-300">
+             <button onClick={onBack} className="group mb-6 flex items-center gap-2 text-slate-500 hover:text-blue-600 font-bold transition-colors">
+                <span className="group-hover:-translate-x-1 transition-transform">←</span> Voltar para lista
+             </button>
+
+             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Left Sidebar: Profile Summary */}
+                <div className="lg:col-span-1">
+                    <div className="bg-white rounded-3xl shadow-lg border border-slate-100 overflow-hidden sticky top-24">
+                        <div className="h-32 bg-gradient-to-r from-blue-600 to-blue-400 relative">
+                             {pro.verified && (
+                                <div className="absolute top-4 right-4 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-white text-xs font-bold flex items-center gap-1">
+                                    ✓ Verificado
+                                </div>
+                             )}
+                        </div>
+                        <div className="px-6 relative">
+                            <div className="w-24 h-24 rounded-full border-4 border-white shadow-md overflow-hidden absolute -top-12 bg-white">
+                                <img src={pro.photo} alt={pro.name} className="w-full h-full object-cover" />
+                            </div>
+                            <div className="pt-16 pb-6 text-center lg:text-left">
+                                <h1 className="text-2xl font-black text-slate-800 leading-tight mb-1">{pro.name}</h1>
+                                <div className="flex items-center justify-center lg:justify-start gap-2 text-slate-600 text-sm mb-4">
+                                     <span className="text-amber-500 text-lg">★</span>
+                                     <span className="font-bold">{pro.rating}</span>
+                                     <span className="text-slate-400">({pro.reviewCount} avaliações)</span>
+                                </div>
+                                
+                                <div className="flex flex-wrap gap-2 justify-center lg:justify-start mb-6">
+                                    {pro.services.map(s => (
+                                        <span key={s} className="bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs font-bold uppercase">{s}</span>
+                                    ))}
+                                </div>
+
+                                <div className="border-t border-slate-100 pt-6">
+                                    <div className="flex justify-between items-center mb-6">
+                                        <span className="text-slate-500 text-sm font-medium">Valor base</span>
+                                        <span className="text-2xl font-black text-slate-800">R$ {pro.basePrice}</span>
+                                    </div>
+                                    <button 
+                                        onClick={() => setShowBooking(true)} 
+                                        className="w-full py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all active:scale-95"
+                                    >
+                                        Agendar Serviço
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                        <div className="text-right">
-                             <div className="text-2xl font-bold text-blue-600">R$ {pro.basePrice}</div>
-                             <div className="text-sm text-slate-500">preço base</div>
+                    </div>
+                </div>
+
+                {/* Main Content: Description & Details */}
+                <div className="lg:col-span-2 space-y-8">
+                    {/* About Section */}
+                    <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100">
+                        <h2 className="text-xl font-bold text-slate-800 mb-4">Sobre o Profissional</h2>
+                        <p className="text-slate-600 leading-relaxed text-lg">{pro.description}</p>
+                        
+                        <div className="mt-8 grid grid-cols-2 gap-4">
+                            <div className="bg-slate-50 p-4 rounded-xl">
+                                <h4 className="text-xs font-bold text-slate-400 uppercase mb-1">Cidades Atendidas</h4>
+                                <p className="font-semibold text-slate-800">{pro.cities.join(', ')}</p>
+                            </div>
+                             <div className="bg-slate-50 p-4 rounded-xl">
+                                <h4 className="text-xs font-bold text-slate-400 uppercase mb-1">Membro desde</h4>
+                                <p className="font-semibold text-slate-800">Janeiro, 2023</p>
+                            </div>
                         </div>
                     </div>
-                    
-                    <p className="text-slate-600 mb-6">{pro.description}</p>
-                    
-                    <div className="grid grid-cols-2 gap-4 mb-8">
-                         <div className="bg-slate-50 p-4 rounded-xl">
-                             <span className="block text-xs font-bold text-slate-400 uppercase">Serviços</span>
-                             <div className="flex flex-wrap gap-1 mt-1">
-                                {pro.services.map(s => <span key={s} className="bg-white border border-slate-200 px-2 py-1 rounded text-xs font-bold text-slate-600">{s}</span>)}
-                             </div>
-                         </div>
-                         <div className="bg-slate-50 p-4 rounded-xl">
-                             <span className="block text-xs font-bold text-slate-400 uppercase">Atende em</span>
-                             <div className="mt-1 font-bold text-slate-700">{pro.cities.join(', ')}</div>
-                         </div>
-                    </div>
 
-                    <button 
-                        onClick={() => setShowBooking(true)}
-                        className="w-full py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 transition-colors"
-                    >
-                        Agendar Serviço
-                    </button>
+                    {/* Reviews Section */}
+                    <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100">
+                        <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center justify-between">
+                            Avaliações de Clientes
+                            <span className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-bold">
+                                {pro.reviewCount} total
+                            </span>
+                        </h2>
+                        
+                        <div className="space-y-6">
+                            {pro.reviews && pro.reviews.length > 0 ? (
+                                pro.reviews.map((review: any) => (
+                                    <div key={review.id} className="border-b border-slate-100 last:border-0 pb-6 last:pb-0">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 bg-slate-200 rounded-full flex items-center justify-center font-bold text-slate-500">
+                                                    {review.author.charAt(0)}
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-bold text-slate-800">{review.author}</h4>
+                                                    <div className="text-amber-400 text-sm tracking-widest">
+                                                        {renderStars(review.rating)}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <span className="text-xs text-slate-400 font-medium">{review.date}</span>
+                                        </div>
+                                        <p className="text-slate-600 pl-14">{review.comment}</p>
+                                    </div>
+                                ))
+                            ) : (
+                                <p className="text-slate-400 italic">Nenhuma avaliação detalhada disponível.</p>
+                            )}
+                        </div>
+                    </div>
                 </div>
              </div>
-             {showBooking && (
-                <BookingModal 
-                    pro={pro} 
-                    onClose={() => setShowBooking(false)} 
-                    onConfirm={() => {
-                        setShowBooking(false);
-                        addToast("Solicitação enviada com sucesso!", "success");
-                    }} 
-                />
-             )}
+
+             {showBooking && <BookingModal pro={pro} onClose={() => setShowBooking(false)} onConfirm={() => { setShowBooking(false); addToast("Solicitação enviada!", "success"); }} />}
         </div>
     );
 };
@@ -1232,223 +1129,51 @@ const ClientHomeView: React.FC<{
     plans: Plan[], 
     onViewProfile: (pro: Professional) => void,
     onRequestService: (req: any) => void 
-}> = ({ addToast, onNavigate, plans, onViewProfile, onRequestService }) => {
+}> = ({ onNavigate, plans, onViewProfile, onRequestService }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCity, setSelectedCity] = useState('');
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
-
-  // Home exibe apenas destaques (top 4 fixos para exemplo)
   const highlightedPros = MOCK_PROS.slice(0, 4);
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
-       {/* Hero / Search */}
        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-black text-slate-800 mb-4">
-            Encontre profissionais de confiança <br/> <span className="text-blue-600">no Vale do Ribeira</span>
-          </h1>
-          <p className="text-lg text-slate-600 mb-8 max-w-2xl mx-auto">
-            Conectamos você aos melhores prestadores de serviço da região. Rápido, seguro e sem complicações.
-          </p>
-          
-          <div className="bg-white p-4 rounded-3xl shadow-xl max-w-3xl mx-auto flex flex-col md:flex-row gap-4 border border-slate-100">
-             <div className="flex-grow">
-               <input 
-                type="text" 
-                placeholder="O que você precisa? (Ex: Eletricista, Limpeza)" 
-                className="w-full h-12 px-4 rounded-xl bg-slate-50 border-none outline-none focus:ring-2 focus:ring-blue-500"
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-               />
-             </div>
-             <div className="md:w-1/3">
-                <select 
-                  className="w-full h-12 px-4 rounded-xl bg-slate-50 border-none outline-none focus:ring-2 focus:ring-blue-500"
-                  value={selectedCity}
-                  onChange={e => setSelectedCity(e.target.value)}
-                >
-                  <option value="">Todas as Cidades</option>
-                  {CITY_CONSTANTS.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-             </div>
-             <button 
-               onClick={() => onNavigate('professionals')}
-               className="h-12 px-8 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
-             >
-               🔍 Buscar
-             </button>
+          <h1 className="text-4xl md:text-5xl font-black text-slate-800 mb-4">Encontre profissionais de confiança <br/> <span className="text-blue-600">no Vale do Ribeira</span></h1>
+          <div className="bg-white p-4 rounded-3xl shadow-xl max-w-3xl mx-auto flex flex-col md:flex-row gap-4 border border-slate-100 mt-8">
+             <div className="flex-grow"><input type="text" placeholder="O que você precisa?" className="w-full h-12 px-4 rounded-xl bg-slate-50 border-none outline-none focus:ring-2 focus:ring-blue-500" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} /></div>
+             <button onClick={() => onNavigate('professionals')} className="h-12 px-8 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors">🔍 Buscar</button>
           </div>
-          
           <div className="mt-6">
               <span className="text-slate-500 text-sm">Não quer procurar? </span>
-              <button 
-                onClick={() => setIsRequestModalOpen(true)}
-                className="text-blue-600 font-bold hover:underline"
-              >
-                  Publique um pedido e receba orçamentos
-              </button>
+              <button onClick={() => setIsRequestModalOpen(true)} className="text-blue-600 font-bold hover:underline">Publique um pedido</button>
           </div>
        </div>
 
-       {/* Results */}
        <div className="mb-16">
-          <div className="flex justify-between items-end mb-6">
-              <h2 className="text-2xl font-black text-slate-800">Profissionais em Destaque</h2>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
-              {highlightedPros.map((pro, index) => (
-                <ProCard 
-                    key={pro.id} 
-                    pro={pro} 
-                    rank={index + 1}
-                    onSelect={() => onViewProfile(pro)} 
-                />
-              ))}
-          </div>
-
-          <div className="text-center">
-              <button 
-                onClick={() => onNavigate('professionals')}
-                className="px-8 py-3 bg-white border-2 border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm"
-              >
-                  Ver todos os profissionais
-              </button>
+          <h2 className="text-2xl font-black text-slate-800 mb-6">Profissionais em Destaque</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              {highlightedPros.map((pro, index) => <ProCard key={pro.id} pro={pro} rank={index + 1} onSelect={() => onViewProfile(pro)} />)}
           </div>
        </div>
 
-       {/* NEW SECTION: Why Use Platform */}
-       <div className="mb-16 bg-white rounded-3xl p-8 md:p-12 border border-slate-100 shadow-sm">
-          <div className="text-center mb-10">
-             <h2 className="text-3xl font-black text-slate-800 mb-4">Por que fechar pelo <span className="text-blue-600">Vale Conecta</span>?</h2>
-             <p className="text-slate-600 max-w-2xl mx-auto">
-               Criamos um ambiente seguro onde quem contrata tem garantia e quem trabalha tem certeza do recebimento.
-               Veja as vantagens de manter tudo dentro da plataforma:
-             </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
-             {/* Client Benefits */}
-             <div className="space-y-6">
-                <div className="flex items-center gap-3 mb-2">
-                   <span className="bg-blue-100 text-blue-600 p-2 rounded-lg text-2xl">👤</span>
-                   <h3 className="text-xl font-bold text-slate-800">Para quem contrata</h3>
-                </div>
-                <ul className="space-y-4">
-                   <li className="flex gap-3">
-                      <div className="mt-1 bg-green-100 text-green-600 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold flex-shrink-0">✓</div>
-                      <div>
-                         <h4 className="font-bold text-slate-800">Pagamento Protegido (Escrow)</h4>
-                         <p className="text-sm text-slate-600">Seu dinheiro fica no cofre do App e só vai para o profissional quando você confirmar que o serviço foi feito.</p>
-                      </div>
-                   </li>
-                   <li className="flex gap-3">
-                      <div className="mt-1 bg-green-100 text-green-600 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold flex-shrink-0">✓</div>
-                      <div>
-                         <h4 className="font-bold text-slate-800">Garantia contra Imprevistos</h4>
-                         <p className="text-sm text-slate-600">Se o profissional não aparecer ou houver problemas, a plataforma devolve seu valor integralmente.</p>
-                      </div>
-                   </li>
-                   <li className="flex gap-3">
-                      <div className="mt-1 bg-green-100 text-green-600 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold flex-shrink-0">✓</div>
-                      <div>
-                         <h4 className="font-bold text-slate-800">Parcele em até 12x</h4>
-                         <p className="text-sm text-slate-600">Facilite o pagamento de reformas e reparos maiores usando seu cartão de crédito.</p>
-                      </div>
-                   </li>
-                </ul>
-             </div>
-
-             {/* Pro Benefits */}
-             <div className="space-y-6 md:border-l md:border-slate-100 md:pl-12">
-                <div className="flex items-center gap-3 mb-2">
-                   <span className="bg-amber-100 text-amber-600 p-2 rounded-lg text-2xl">🛠️</span>
-                   <h3 className="text-xl font-bold text-slate-800">Para o Profissional</h3>
-                </div>
-                 <ul className="space-y-4">
-                   <li className="flex gap-3">
-                      <div className="mt-1 bg-blue-100 text-blue-600 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold flex-shrink-0">✓</div>
-                      <div>
-                         <h4 className="font-bold text-slate-800">Fim dos Calotes</h4>
-                         <p className="text-sm text-slate-600">O cliente paga antes. Você tem a certeza absoluta de que vai receber assim que terminar o trabalho.</p>
-                      </div>
-                   </li>
-                   <li className="flex gap-3">
-                      <div className="mt-1 bg-blue-100 text-blue-600 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold flex-shrink-0">✓</div>
-                      <div>
-                         <h4 className="font-bold text-slate-800">Reputação Verificada</h4>
-                         <p className="text-sm text-slate-600">Serviços fechados pelo App geram avaliações oficiais. Quem tem mais estrelas cobra mais caro.</p>
-                      </div>
-                   </li>
-                   <li className="flex gap-3">
-                      <div className="mt-1 bg-blue-100 text-blue-600 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold flex-shrink-0">✓</div>
-                      <div>
-                         <h4 className="font-bold text-slate-800">Organização Automática</h4>
-                         <p className="text-sm text-slate-600">Histórico de clientes, recibos e agenda tudo em um só lugar. Profissionalize sua gestão.</p>
-                      </div>
-                   </li>
-                </ul>
-             </div>
-          </div>
-       </div>
-
-       {/* Subscription Plans Section - Persuasive */}
        <section className="bg-slate-900 rounded-3xl p-8 md:p-16 text-white relative overflow-hidden mb-16">
-          {/* Decorative Background Elements */}
-          <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/20 blur-[100px] rounded-full -mr-48 -mt-48 pointer-events-none"></div>
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-600/20 blur-[80px] rounded-full -ml-32 -mb-32 pointer-events-none"></div>
-
           <div className="relative z-10 text-center max-w-3xl mx-auto mb-12">
-            <h2 className="text-3xl md:text-5xl font-black mb-6 leading-tight">
-              Profissionalize seu serviço e <span className="text-blue-500">multiplique seus clientes</span>
-            </h2>
-            <p className="text-slate-400 text-lg">
-              Junte-se a centenas de profissionais no Vale do Ribeira que estão transformando seus negócios. Escolha o plano que cabe no seu bolso e comece hoje.
-            </p>
+            <h2 className="text-3xl md:text-5xl font-black mb-6">Profissionalize seu serviço</h2>
           </div>
-
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative z-10">
             {plans.map(plan => (
-               <div key={plan.id} className={`p-8 rounded-3xl flex flex-col relative transition-all duration-300 ${plan.recommended ? 'bg-blue-600 text-white shadow-2xl scale-105 z-20 ring-4 ring-blue-500/30' : 'bg-slate-800 text-slate-300 border border-slate-700 hover:border-blue-500/50'}`}>
-                   {plan.recommended && <span className="absolute -top-4 left-1/2 -translate-x-1/2 bg-white text-blue-900 text-xs font-black px-4 py-1 rounded-full uppercase tracking-wider shadow-lg">Mais Popular</span>}
-                   
+               <div key={plan.id} className={`p-8 rounded-3xl flex flex-col relative ${plan.recommended ? 'bg-blue-600 text-white scale-105 shadow-2xl' : 'bg-slate-800 text-slate-300 border border-slate-700'}`}>
                    <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
-                   <div className="flex items-baseline gap-1 mb-6">
-                     <span className="text-4xl font-black">{plan.price}</span>
-                     <span className="text-sm opacity-70">/{plan.period}</span>
-                   </div>
-                   
-                   <p className="text-sm opacity-80 mb-8 pb-8 border-b border-white/10 min-h-[3rem]">{plan.fee}</p>
-                   
+                   <span className="text-4xl font-black mb-6">{plan.price}</span>
                    <ul className="space-y-4 mb-8 flex-grow">
-                       {plan.features.map((feat, i) => (
-                           <li key={i} className="flex items-start gap-3 text-sm">
-                               <span className={`font-bold ${plan.recommended ? 'text-white' : 'text-blue-500'}`}>✓</span>
-                               <span>{feat}</span>
-                           </li>
-                       ))}
+                       {plan.features.map((feat, i) => <li key={i} className="flex items-start gap-3 text-sm"><span>✓</span><span>{feat}</span></li>)}
                    </ul>
-
-                   <button 
-                     onClick={() => onNavigate('register')}
-                     className={`w-full py-4 rounded-xl font-bold transition-all ${plan.recommended ? 'bg-white text-blue-900 hover:bg-slate-100' : 'bg-blue-600/10 text-blue-400 hover:bg-blue-600 hover:text-white'}`}
-                   >
-                       Começar Agora
-                   </button>
+                   <button onClick={() => onNavigate('register')} className="w-full py-4 rounded-xl font-bold bg-white/10 hover:bg-white/20">Começar Agora</button>
                </div>
             ))}
           </div>
        </section>
 
-       {isRequestModalOpen && (
-           <ServiceRequestModal 
-                onClose={() => setIsRequestModalOpen(false)} 
-                onConfirm={(req) => {
-                    onRequestService(req);
-                    setIsRequestModalOpen(false);
-                }} 
-            />
-       )}
+       {isRequestModalOpen && <ServiceRequestModal onClose={() => setIsRequestModalOpen(false)} onConfirm={(req) => { onRequestService(req); setIsRequestModalOpen(false); }} />}
     </div>
   );
 };
@@ -1458,122 +1183,192 @@ const ClientDashboardView: React.FC<{
     requests: ServiceRequest[];
     onRequestService: (req: any) => void;
     addToast: (msg: string, type: 'success' | 'error' | 'info') => void;
-    onNavigate: (view: string) => void;
     onUpdateBookingStatus: (id: string, status: any) => void;
-}> = ({ bookings, requests, onRequestService, onNavigate, addToast, onUpdateBookingStatus }) => {
+}> = ({ bookings, requests, onRequestService, addToast, onUpdateBookingStatus }) => {
     const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
     const [paymentBooking, setPaymentBooking] = useState<Booking | null>(null);
 
     return (
         <div className="max-w-7xl mx-auto px-4 py-8">
             <h1 className="text-3xl font-black text-slate-800 mb-8">Minha Área</h1>
-            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
                     <h2 className="text-xl font-bold mb-4">Meus Pedidos</h2>
-                    {requests.length === 0 ? (
-                        <p className="text-slate-500">Você ainda não fez pedidos.</p>
-                    ) : (
-                        <div className="space-y-4">
-                            {requests.map(req => (
-                                <div key={req.id} className="p-4 border rounded-xl">
-                                    <div className="font-bold">{req.category}</div>
-                                    <div className="text-sm text-slate-500">{req.description}</div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                    <button 
-                        onClick={() => setIsRequestModalOpen(true)} 
-                        className="mt-4 text-blue-600 font-bold hover:underline"
-                    >
-                        + Novo Pedido
-                    </button>
+                    <div className="space-y-4">
+                        {requests.map(req => (
+                            <div key={req.id} className="p-4 border rounded-xl">
+                                <div className="font-bold">{req.category}</div>
+                                <div className="text-sm text-slate-500">{req.description}</div>
+                            </div>
+                        ))}
+                    </div>
+                    <button onClick={() => setIsRequestModalOpen(true)} className="mt-4 text-blue-600 font-bold hover:underline">+ Novo Pedido</button>
                 </div>
-
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
                     <h2 className="text-xl font-bold mb-4">Agendamentos</h2>
-                    {bookings.length === 0 ? (
-                        <p className="text-slate-500">Nenhum agendamento ativo.</p>
-                    ) : (
-                        <div className="space-y-4">
-                            {bookings.map(book => (
-                                <div key={book.id} className="p-4 border rounded-xl flex flex-col gap-3">
-                                    <div className="flex justify-between">
-                                        <div>
-                                            <div className="font-bold">{book.service}</div>
-                                            <div className="text-sm text-slate-500">com {book.proName}</div>
-                                        </div>
-                                        <div className="text-right">
-                                            <div className="font-bold">R$ {book.price}</div>
-                                            <span className={`text-xs px-2 py-0.5 rounded-full font-bold uppercase ${
-                                                book.status === 'paid' ? 'bg-blue-100 text-blue-700' :
-                                                book.status === 'completed' ? 'bg-purple-100 text-purple-700' :
-                                                book.status === 'accepted' ? 'bg-amber-100 text-amber-700' :
-                                                'bg-slate-100 text-slate-600'
-                                            }`}>
-                                                {book.status === 'paid' ? 'Pago (Garantia)' :
-                                                 book.status === 'completed' ? 'Realizado' :
-                                                 book.status === 'accepted' ? 'Aguardando Pagamento' : 
-                                                 book.status}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    
-                                    {/* Ações do Cliente */}
-                                    {book.status === 'accepted' && (
-                                        <button 
-                                            onClick={() => setPaymentBooking(book)}
-                                            className="w-full py-2 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 transition-colors shadow-sm"
-                                        >
-                                            💳 Pagar Agora (Garantia Escrow)
-                                        </button>
-                                    )}
-
-                                    {book.status === 'completed' && (
-                                        <div className="bg-purple-50 p-3 rounded-lg border border-purple-100">
-                                            <p className="text-xs text-purple-800 mb-2 font-bold">O profissional marcou como concluído.</p>
-                                            <button 
-                                                onClick={() => {
-                                                    if(window.confirm(`O serviço foi realizado corretamente? Ao confirmar, o valor será liberado para o profissional.`)) {
-                                                        onUpdateBookingStatus(book.id, 'finished'); // Final status
-                                                        addToast("Valor liberado para o profissional! Obrigado.", "success");
-                                                    }
-                                                }}
-                                                className="w-full py-2 bg-purple-600 text-white rounded-lg font-bold hover:bg-purple-700 transition-colors shadow-sm"
-                                            >
-                                                ✅ Confirmar e Liberar Pagamento
-                                            </button>
-                                        </div>
-                                    )}
+                    <div className="space-y-4">
+                        {bookings.map(book => (
+                            <div key={book.id} className="p-4 border rounded-xl flex flex-col gap-3">
+                                <div className="flex justify-between">
+                                    <div><div className="font-bold">{book.service}</div><div className="text-sm text-slate-500">com {book.proName}</div></div>
+                                    <div className="text-right"><div className="font-bold">R$ {book.price}</div><span className="text-xs font-bold uppercase">{book.status}</span></div>
                                 </div>
-                            ))}
+                                {book.status === 'accepted' && <button onClick={() => setPaymentBooking(book)} className="w-full py-2 bg-green-600 text-white rounded-lg font-bold">💳 Pagar Agora</button>}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+            {isRequestModalOpen && <ServiceRequestModal onClose={() => setIsRequestModalOpen(false)} onConfirm={(req) => { onRequestService(req); setIsRequestModalOpen(false); }} />}
+            {paymentBooking && <PaymentModal booking={paymentBooking} onClose={() => setPaymentBooking(null)} onSuccess={() => { onUpdateBookingStatus(paymentBooking.id, 'paid'); setPaymentBooking(null); addToast("Pagamento realizado!", "success"); }} />}
+        </div>
+    );
+};
+
+const ProDashboardView: React.FC<{
+    pro: Professional;
+    requests: ServiceRequest[];
+    bookings: Booking[];
+    onUnlockContact: (reqId: string, cost: number) => void;
+    onUpdateBookingStatus: (id: string, status: any) => void;
+    onAddCredits: () => void;
+    onEditProfile: (updatedPro: Professional) => void;
+}> = ({ pro, requests, bookings, onUnlockContact, onUpdateBookingStatus, onAddCredits, onEditProfile }) => {
+    const UNLOCK_COST = 50;
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+    return (
+        <div className="max-w-7xl mx-auto px-4 py-8">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+                <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white shadow-lg relative group">
+                        <img src={pro.photo} alt={pro.name} className="w-full h-full object-cover" />
+                    </div>
+                    <div>
+                        <div className="flex items-center gap-3">
+                             <h1 className="text-3xl font-black text-slate-800">{pro.name}</h1>
+                             <button onClick={() => setIsEditModalOpen(true)} className="text-slate-400 hover:text-blue-600 transition-colors" title="Editar Perfil">
+                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                 </svg>
+                             </button>
                         </div>
-                    )}
+                        <p className="text-slate-500">Vamos encontrar novos clientes hoje?</p>
+                    </div>
+                </div>
+                <div className="flex gap-3">
+                     <div className="bg-slate-800 text-white px-6 py-3 rounded-xl shadow-lg flex flex-col items-center">
+                        <span className="text-[10px] font-bold uppercase opacity-70">Créditos</span>
+                        <span className="text-xl font-black text-amber-400">{pro.credits}</span>
+                    </div>
+                     <button onClick={onAddCredits} className="bg-amber-500 hover:bg-amber-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-amber-200 transition-colors">
+                        + Recarregar
+                    </button>
                 </div>
             </div>
 
-            {/* Render Request Modal */}
-            {isRequestModalOpen && (
-                <ServiceRequestModal 
-                    onClose={() => setIsRequestModalOpen(false)} 
-                    onConfirm={(req) => {
-                        onRequestService(req);
-                        setIsRequestModalOpen(false);
-                    }} 
-                />
-            )}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Left Column: Opportunities */}
+                <div className="lg:col-span-2 space-y-6">
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                        <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+                            🚀 Oportunidades no Vale
+                            <span className="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full">{requests.length} novas</span>
+                        </h2>
+                        <div className="space-y-4">
+                            {requests.map(req => {
+                                const isUnlocked = req.unlockedBy.includes(pro.id);
+                                return (
+                                    <div key={req.id} className="p-5 rounded-xl border border-slate-200 hover:border-blue-300 transition-all bg-slate-50/50">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <span className="bg-white border border-slate-200 text-slate-600 px-3 py-1 rounded-lg text-xs font-bold uppercase">{req.category}</span>
+                                            <span className="text-xs font-bold text-slate-400">{req.city}</span>
+                                        </div>
+                                        <p className="text-slate-800 font-medium mb-4 line-clamp-2">{req.description}</p>
+                                        
+                                        {isUnlocked ? (
+                                            <div className="bg-green-100 border border-green-200 p-3 rounded-lg flex justify-between items-center">
+                                                <div>
+                                                    <span className="block text-xs font-bold text-green-700 uppercase">Contato do Cliente</span>
+                                                    <span className="font-black text-green-800 text-lg">{req.contactPhone || '(13) 99999-9999'}</span>
+                                                </div>
+                                                <a href={`https://wa.me/55${req.contactPhone?.replace(/\D/g,'') || ''}`} target="_blank" rel="noreferrer" className="bg-green-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-green-700">
+                                                    Chamar no WhatsApp
+                                                </a>
+                                            </div>
+                                        ) : (
+                                            <div className="flex justify-between items-center mt-4 pt-4 border-t border-slate-200/60">
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${req.urgency === 'high' ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}>
+                                                        Urgência {req.urgency === 'high' ? 'Alta' : req.urgency === 'medium' ? 'Média' : 'Baixa'}
+                                                    </span>
+                                                </div>
+                                                <button 
+                                                    onClick={() => onUnlockContact(req.id, UNLOCK_COST)}
+                                                    disabled={pro.credits < UNLOCK_COST}
+                                                    className="bg-blue-600 disabled:bg-slate-300 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg font-bold shadow-md hover:bg-blue-700 transition-colors text-sm"
+                                                >
+                                                    Desbloquear por {UNLOCK_COST} créditos
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
 
-            {/* Render Payment Modal */}
-            {paymentBooking && (
-                <PaymentModal
-                    booking={paymentBooking}
-                    onClose={() => setPaymentBooking(null)}
-                    onSuccess={() => {
-                        onUpdateBookingStatus(paymentBooking.id, 'paid');
-                        setPaymentBooking(null);
-                        addToast("Pagamento realizado! O valor está seguro no cofre do app.", "success");
-                    }}
+                {/* Right Column: Schedule & Financial */}
+                <div className="space-y-6">
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                         <h2 className="text-lg font-bold mb-4">Minha Agenda</h2>
+                         <div className="space-y-3">
+                             {bookings.filter(b => b.proId === pro.id).length === 0 ? (
+                                 <p className="text-slate-400 text-center py-4 text-sm">Nenhum serviço agendado.</p>
+                             ) : (
+                                 bookings.filter(b => b.proId === pro.id).map(booking => (
+                                     <div key={booking.id} className="p-3 border rounded-lg bg-white relative">
+                                         <div className="flex justify-between mb-1">
+                                             <span className="font-bold text-sm text-slate-800">{booking.date}</span>
+                                             <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
+                                                 booking.status === 'accepted' ? 'bg-green-100 text-green-700' : 
+                                                 booking.status === 'pending' ? 'bg-amber-100 text-amber-700' : 
+                                                 'bg-slate-100 text-slate-600'
+                                             }`}>{booking.status === 'accepted' ? 'Confirmado' : booking.status}</span>
+                                         </div>
+                                         <p className="text-xs text-slate-500 mb-2">{booking.service} para {booking.clientName}</p>
+                                         {booking.status === 'pending' && (
+                                             <div className="flex gap-2">
+                                                 <button onClick={() => onUpdateBookingStatus(booking.id, 'accepted')} className="flex-1 bg-green-500 text-white py-1 rounded text-xs font-bold">Aceitar</button>
+                                                 <button onClick={() => onUpdateBookingStatus(booking.id, 'rejected')} className="flex-1 bg-red-100 text-red-600 py-1 rounded text-xs font-bold">Recusar</button>
+                                             </div>
+                                         )}
+                                     </div>
+                                 ))
+                             )}
+                         </div>
+                    </div>
+
+                    <div className="bg-gradient-to-br from-slate-800 to-slate-900 text-white p-6 rounded-2xl shadow-lg">
+                        <h3 className="text-xs font-bold uppercase opacity-60 mb-1">Ganhos do Mês</h3>
+                        <div className="text-3xl font-black mb-4">R$ 1.850,00</div>
+                        <div className="h-1 bg-white/10 rounded-full overflow-hidden mb-2">
+                            <div className="h-full bg-green-400 w-[70%]"></div>
+                        </div>
+                        <p className="text-xs text-slate-400">Meta: R$ 2.500,00</p>
+                    </div>
+                </div>
+            </div>
+            
+            {isEditModalOpen && (
+                <ProfileEditorModal 
+                    pro={pro} 
+                    onClose={() => setIsEditModalOpen(false)} 
+                    onSave={(updated) => {
+                        onEditProfile(updated);
+                        setIsEditModalOpen(false);
+                    }} 
                 />
             )}
         </div>
@@ -1584,727 +1379,490 @@ const AdminDashboardView: React.FC<{
     plans: Plan[];
     onUpdatePlans: (plans: Plan[]) => void;
     addToast: (msg: string, type: 'success' | 'error' | 'info') => void;
-}> = ({ plans, addToast }) => {
-    return (
-        <div className="max-w-7xl mx-auto px-4 py-8">
-            <h1 className="text-3xl font-black text-slate-800 mb-8">Administração</h1>
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                <h2 className="text-xl font-bold mb-4">Planos de Assinatura</h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+}> = ({ plans, onUpdatePlans, addToast }) => {
+    const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'financial' | 'plans' | 'verification'>('overview');
+    const [editingPlan, setEditingPlan] = useState<Plan | undefined>(undefined);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    // Mock Users Data for Admin
+    const [users, setUsers] = useState([
+        ...MOCK_PROS.map(p => ({ ...p, role: 'pro', joinDate: '2024-01-15' })),
+        { id: 'c1', name: 'Maria Souza', role: 'client', joinDate: '2024-02-10', verified: true, verificationStatus: 'verified', email: 'maria@example.com' },
+        { id: 'c2', name: 'João Paulo', role: 'client', joinDate: '2024-03-05', verified: true, verificationStatus: 'verified', email: 'joao@example.com' }
+    ]);
+
+    // Mock Verification Queue
+    const [pendingVerifications, setPendingVerifications] = useState([
+        { id: 'v1', proId: '3', name: 'José Pinturas', docType: 'RG/CNH', docUrl: 'https://picsum.photos/seed/doc1/400/300', status: 'pending', date: '2024-05-20' },
+        { id: 'v2', proId: '5', name: 'Antônio Jardineiro', docType: 'Comprovante Residência', docUrl: 'https://picsum.photos/seed/doc2/400/300', status: 'pending', date: '2024-05-21' }
+    ]);
+
+    // Mock Financial Transactions
+    const transactions = [
+        { id: 't1', type: 'Assinatura Premium', user: 'Carlos Oliveira', amount: 59.90, date: '2024-05-01', status: 'completed' },
+        { id: 't2', type: 'Taxa Serviço (10%)', user: 'Ana Maria', amount: 20.00, date: '2024-05-02', status: 'completed' },
+        { id: 't3', type: 'Assinatura Plus', user: 'Marcos Hidráulica', amount: 29.90, date: '2024-05-03', status: 'completed' },
+        { id: 't4', type: 'Taxa Desbloqueio', user: 'Carlos Oliveira', amount: 5.00, date: '2024-05-04', status: 'completed' },
+    ];
+
+    // Mock Chart Data
+    const revenueData = [
+        { name: 'Jan', value: 1200 },
+        { name: 'Fev', value: 1900 },
+        { name: 'Mar', value: 2400 },
+        { name: 'Abr', value: 2100 },
+        { name: 'Mai', value: 3200 },
+    ];
+
+    const handleSavePlan = (plan: Plan) => {
+        const exists = plans.find(p => p.id === plan.id);
+        if (exists) {
+            onUpdatePlans(plans.map(p => p.id === plan.id ? plan : p));
+            addToast("Plano atualizado!", "success");
+        } else {
+            onUpdatePlans([...plans, plan]);
+            addToast("Plano criado!", "success");
+        }
+        setIsModalOpen(false);
+    };
+
+    const handleDeletePlan = (id: string) => {
+        if (window.confirm("Excluir plano?")) {
+            onUpdatePlans(plans.filter(p => p.id !== id));
+            addToast("Plano removido.", "info");
+        }
+    };
+
+    const toggleUserStatus = (id: string, field: 'verified' | 'blocked') => {
+        setUsers(users.map(u => {
+            if (u.id === id) {
+                if (field === 'verified') return { ...u, verified: !u.verified, verificationStatus: !u.verified ? 'verified' : 'unverified' };
+                // Logic for blocking would go here
+            }
+            return u;
+        }));
+        addToast("Status do usuário atualizado", "info");
+    };
+
+    const handleVerify = (id: string, approved: boolean) => {
+        setPendingVerifications(pendingVerifications.filter(v => v.id !== id));
+        addToast(approved ? "Documento aprovado e profissional verificado." : "Documento rejeitado.", approved ? "success" : "info");
+    };
+
+    const renderOverview = () => (
+        <div className="space-y-6 animate-in fade-in">
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                    <h3 className="text-xs font-bold text-slate-500 uppercase mb-1">Receita Mensal</h3>
+                    <p className="text-3xl font-black text-green-600">R$ 3.200,00</p>
+                    <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded font-bold">+15% vs mês anterior</span>
+                </div>
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                    <h3 className="text-xs font-bold text-slate-500 uppercase mb-1">Usuários Ativos</h3>
+                    <p className="text-3xl font-black text-slate-800">{users.length}</p>
+                    <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded font-bold">4 Novos hoje</span>
+                </div>
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                    <h3 className="text-xs font-bold text-slate-500 uppercase mb-1">Assinaturas Ativas</h3>
+                    <p className="text-3xl font-black text-slate-800">85</p>
+                </div>
+            </div>
+            
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 h-80">
+                <h3 className="font-bold text-lg mb-4">Evolução da Receita</h3>
+                <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={revenueData}>
+                        <defs>
+                            <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#2563eb" stopOpacity={0.1}/>
+                                <stop offset="95%" stopColor="#2563eb" stopOpacity={0}/>
+                            </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                        <XAxis dataKey="name" axisLine={false} tickLine={false} />
+                        <YAxis axisLine={false} tickLine={false} />
+                        <Tooltip />
+                        <Area type="monotone" dataKey="value" stroke="#2563eb" fillOpacity={1} fill="url(#colorValue)" />
+                    </AreaChart>
+                </ResponsiveContainer>
+            </div>
+        </div>
+    );
+
+    const renderUsers = () => (
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden animate-in fade-in">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+                <h3 className="font-bold text-lg">Base de Usuários</h3>
+                <input type="text" placeholder="Buscar usuário..." className="bg-slate-50 border-none rounded-lg px-4 py-2 text-sm w-64" />
+            </div>
+            <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                    <thead className="bg-slate-50 text-slate-500 font-bold uppercase text-xs">
+                        <tr>
+                            <th className="p-4">Nome</th>
+                            <th className="p-4">Tipo</th>
+                            <th className="p-4">Status</th>
+                            <th className="p-4">Data Cadastro</th>
+                            <th className="p-4 text-right">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                        {users.map((u: any) => (
+                            <tr key={u.id} className="hover:bg-slate-50 transition-colors">
+                                <td className="p-4 font-bold text-slate-700">{u.name}</td>
+                                <td className="p-4">
+                                    <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${u.role === 'pro' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
+                                        {u.role === 'pro' ? 'Profissional' : 'Cliente'}
+                                    </span>
+                                </td>
+                                <td className="p-4">
+                                    {u.verified ? (
+                                        <span className="text-green-600 font-bold flex items-center gap-1">✓ Verificado</span>
+                                    ) : (
+                                        <span className="text-slate-400 font-bold">Pendente</span>
+                                    )}
+                                </td>
+                                <td className="p-4 text-slate-500">{u.joinDate}</td>
+                                <td className="p-4 text-right">
+                                    <button onClick={() => toggleUserStatus(u.id, 'verified')} className="text-blue-600 font-bold hover:underline text-xs mr-3">
+                                        {u.verified ? 'Remover Selo' : 'Aprovar'}
+                                    </button>
+                                    <button className="text-red-600 font-bold hover:underline text-xs">Banir</button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+
+    const renderFinancial = () => (
+         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden animate-in fade-in">
+            <div className="p-6 border-b border-slate-100">
+                <h3 className="font-bold text-lg">Histórico de Transações</h3>
+            </div>
+            <table className="w-full text-left text-sm">
+                <thead className="bg-slate-50 text-slate-500 font-bold uppercase text-xs">
+                    <tr>
+                        <th className="p-4">Data</th>
+                        <th className="p-4">Descrição</th>
+                        <th className="p-4">Usuário</th>
+                        <th className="p-4">Valor</th>
+                        <th className="p-4">Status</th>
+                    </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                    {transactions.map(t => (
+                        <tr key={t.id} className="hover:bg-slate-50 transition-colors">
+                            <td className="p-4 text-slate-500">{t.date}</td>
+                            <td className="p-4 font-bold text-slate-700">{t.type}</td>
+                            <td className="p-4">{t.user}</td>
+                            <td className="p-4 font-mono font-bold text-green-600">+ R$ {t.amount.toFixed(2)}</td>
+                            <td className="p-4"><span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold uppercase">Pago</span></td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+    );
+
+    const renderPlans = () => (
+        <div className="animate-in fade-in">
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-8">
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-xl font-bold">Gerenciar Planos</h2>
+                    <button onClick={() => { setEditingPlan(undefined); setIsModalOpen(true); }} className="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-blue-700 transition-colors">+ Novo Plano</button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {plans.map(plan => (
-                        <div key={plan.id} className={`p-4 rounded-xl border-2 ${plan.recommended ? 'border-blue-500' : 'border-slate-200'}`}>
+                        <div key={plan.id} className="p-6 rounded-xl border-2 border-slate-200 relative group bg-white hover:border-blue-300 transition-colors">
                             <h3 className="font-bold text-lg">{plan.name}</h3>
                             <div className="text-2xl font-black mt-2">R$ {plan.price}</div>
-                            <div className="text-sm text-slate-500 mb-4">/{plan.period}</div>
-                            <ul className="text-sm space-y-2 mb-4">
-                                {plan.features.map((f, i) => <li key={i}>✓ {f}</li>)}
-                            </ul>
+                            <div className="text-xs text-slate-500 mb-4">{plan.period}</div>
+                            <div className="flex gap-2 mt-4">
+                                <button onClick={() => { setEditingPlan(plan); setIsModalOpen(true); }} className="text-blue-600 text-sm font-bold hover:underline">Editar</button>
+                                <button onClick={() => handleDeletePlan(plan.id)} className="text-red-600 text-sm font-bold hover:underline">Excluir</button>
+                            </div>
                         </div>
                     ))}
                 </div>
-                <p className="text-sm text-slate-500 mt-4 italic">Edição de planos desabilitada nesta demo.</p>
             </div>
         </div>
     );
-};
 
-const ServiceRequestDetailView: React.FC<{
-    req: ServiceRequest,
-    onBack: () => void;
-    addToast: (msg: string, type: 'success' | 'error' | 'info') => void;
-    currentPro?: Professional | null;
-    onUnlockContact: (reqId: string, cost: number) => void;
-}> = ({ req, onBack, addToast, currentPro, onUnlockContact }) => {
-
-    const UNLOCK_COST = 50;
-    const isUnlocked = currentPro && req.unlockedBy.includes(currentPro.id);
-    const whatsappLink = req.contactPhone ? `https://wa.me/55${req.contactPhone.replace(/\D/g,'')}` : '#';
-    const [isProposalModalOpen, setIsProposalModalOpen] = useState(false);
-
-    const handleSendProposal = (details: { description: string; price: number; timeline: string }) => {
-        addToast(`Sua proposta de R$ ${details.price} foi enviada com sucesso!`, "success");
-        setIsProposalModalOpen(false);
-        onBack();
-    };
-
-    const handleUnlock = () => {
-        if (!currentPro) {
-            addToast("Faça login como profissional para desbloquear.", "error");
-            return;
-        }
-        if (currentPro.credits < UNLOCK_COST) {
-            addToast("Créditos insuficientes. Recarregue sua carteira.", "error");
-            return;
-        }
-        onUnlockContact(req.id, UNLOCK_COST);
-    };
-
-    return (
-        <div className="max-w-3xl mx-auto px-4 py-8">
-             <button onClick={onBack} className="mb-6 text-slate-500 hover:text-slate-800 font-bold flex items-center gap-2">
-                ← Voltar para o Mural
-            </button>
-
-            <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100">
-                <div className="flex justify-between items-start mb-6">
-                    <div>
-                         <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-lg text-sm font-bold uppercase mb-2 inline-block">{req.category}</span>
-                         <h1 className="text-2xl font-black text-slate-800">Pedido #{req.id.slice(-4)}</h1>
-                    </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${req.urgency === 'high' ? 'bg-red-100 text-red-600' : req.urgency === 'medium' ? 'bg-amber-100 text-amber-600' : 'bg-green-100 text-green-600'}`}>
-                        Urgência: {req.urgency === 'low' ? 'Baixa' : req.urgency === 'medium' ? 'Média' : 'Alta'}
-                    </span>
-                </div>
-
-                <div className="prose prose-slate max-w-none mb-8">
-                    <h3 className="text-lg font-bold text-slate-800 mb-2">Descrição do Serviço</h3>
-                    <p className="text-slate-600 leading-relaxed bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                        {req.description}
-                    </p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 mb-8">
-                    <div className="p-4 rounded-xl border border-slate-100">
-                        <span className="block text-xs font-bold text-slate-400 uppercase mb-1">Localização</span>
-                        <span className="text-slate-800 font-bold">📍 {req.city}</span>
-                    </div>
-                    <div className="p-4 rounded-xl border border-slate-100">
-                        <span className="block text-xs font-bold text-slate-400 uppercase mb-1">Data de Criação</span>
-                        <span className="text-slate-800 font-bold">📅 {new Date(req.createdAt).toLocaleDateString()}</span>
-                    </div>
-                </div>
-
-                {/* Hybrid Model Section */}
-                <div className="bg-slate-50 rounded-2xl border border-slate-200 p-6 mb-8">
-                    <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
-                        📱 Contato com o Cliente
-                        {isUnlocked && <span className="bg-green-100 text-green-700 text-[10px] px-2 py-1 rounded-full uppercase">Desbloqueado</span>}
-                    </h3>
-                    
-                    {isUnlocked ? (
-                        <div className="animate-in fade-in zoom-in-95">
-                            <div className="flex items-center gap-4 p-4 bg-white rounded-xl border border-green-100 mb-4">
-                                <div className="bg-green-100 p-3 rounded-full text-2xl">📞</div>
-                                <div>
-                                    <p className="font-bold text-slate-800 text-lg">{req.contactPhone || '(13) 99999-9999'}</p>
-                                    <p className="text-xs text-slate-500">Contato liberado. Negocie com responsabilidade.</p>
-                                </div>
-                            </div>
-                            <a 
-                                href={whatsappLink} 
-                                target="_blank" 
-                                rel="noreferrer"
-                                className="block w-full text-center bg-[#25D366] text-white font-bold py-3 rounded-xl hover:brightness-95 transition-all shadow-sm"
-                            >
-                                Iniciar conversa no WhatsApp
-                            </a>
-                        </div>
-                    ) : (
-                        <div className="bg-white p-6 rounded-xl border border-slate-200 text-center">
-                            <div className="text-4xl mb-2 filter blur-sm select-none opacity-50">📞 (13) 9XXXX-XXXX</div>
-                            <p className="text-sm text-slate-500 mb-4">O contato deste cliente está oculto. Desbloqueie para negociar diretamente via WhatsApp.</p>
-                            
-                            <div className="flex flex-col items-center gap-2">
-                                <button 
-                                    onClick={handleUnlock}
-                                    className="w-full bg-amber-400 text-amber-900 font-black py-3 rounded-xl hover:bg-amber-500 transition-colors shadow-sm flex items-center justify-center gap-2"
-                                >
-                                    🔓 Desbloquear Contato
-                                    <span className="bg-white/30 px-2 py-0.5 rounded text-xs">-{UNLOCK_COST} Créditos</span>
-                                </button>
-                                {currentPro && (
-                                    <span className="text-xs text-slate-400">
-                                        Seu saldo atual: <strong>{currentPro.credits} créditos</strong>
-                                    </span>
-                                )}
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100 mb-8">
-                    <h4 className="font-bold text-blue-900 mb-2">💡 Opção Segura (Escrow)</h4>
-                    <p className="text-sm text-blue-800/80">
-                        Você também pode enviar uma proposta formal pela plataforma. O pagamento do cliente fica garantido no nosso cofre até a conclusão.
-                    </p>
-                </div>
-
-                <div className="flex gap-4">
-                     <button 
-                        onClick={onBack}
-                        className="flex-1 py-4 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition-colors"
-                     >
-                        Cancelar
-                     </button>
-                     <button 
-                        onClick={() => setIsProposalModalOpen(true)}
-                        className="flex-[2] py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 transition-colors"
-                     >
-                        Enviar Proposta (Escrow)
-                     </button>
-                </div>
-            </div>
-
-            {isProposalModalOpen && (
-                <ProposalModal 
-                    request={req}
-                    onClose={() => setIsProposalModalOpen(false)}
-                    onConfirm={handleSendProposal}
-                />
-            )}
-        </div>
-    );
-};
-
-const ProProfileEditor: React.FC<{
-    pro: Professional;
-    onSave: (updatedPro: Professional) => void;
-    onCancel: () => void;
-}> = ({ pro, onSave, onCancel }) => {
-    const [formData, setFormData] = useState<Professional>(pro);
-    const [docsUploaded, setDocsUploaded] = useState(false);
-
-    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            // In a real app, this would upload to server. Here we use FileReader for preview.
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                if (ev.target?.result) {
-                    setFormData({ ...formData, photo: ev.target.result as string });
-                }
-            };
-            reader.readAsDataURL(e.target.files[0]);
-        }
-    };
-
-    const handleDocUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files.length > 0) {
-            // Simulate upload
-            setTimeout(() => setDocsUploaded(true), 1000);
-        }
-    };
-
-    return (
-        <div className="max-w-3xl mx-auto px-4 py-8">
-            <h1 className="text-3xl font-black text-slate-800 mb-8">Editar Perfil Profissional</h1>
-            
-            <form onSubmit={(e) => { e.preventDefault(); onSave(formData); }} className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 space-y-6">
-                
-                {/* Photo Upload */}
-                <div className="flex items-center gap-6">
-                    <div className="relative w-24 h-24">
-                        <img src={formData.photo} alt="Profile" className="w-full h-full rounded-2xl object-cover shadow-md" />
-                        <label className="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full cursor-pointer hover:bg-blue-700 shadow-sm">
-                            <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
-                            📷
-                        </label>
-                    </div>
-                    <div>
-                        <h3 className="font-bold text-slate-800">Foto de Perfil</h3>
-                        <p className="text-sm text-slate-500">Clique no ícone da câmera para alterar. Use uma foto clara e profissional.</p>
-                    </div>
-                </div>
-
-                {/* Basic Info */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Nome Completo</label>
-                        <input 
-                            type="text" 
-                            required
-                            className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
-                            value={formData.name}
-                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Preço Base (Visita/Hora)</label>
-                        <input 
-                            type="number" 
-                            required
-                            className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
-                            value={formData.basePrice}
-                            onChange={(e) => setFormData({ ...formData, basePrice: Number(e.target.value) })}
-                        />
-                    </div>
-                </div>
-
-                {/* Description */}
-                <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Sobre Você</label>
-                    <textarea 
-                        required
-                        className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 h-24 resize-none"
-                        value={formData.description}
-                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    />
-                </div>
-
-                {/* Services & Cities (Simplified as text for demo, ideally multi-select) */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                     <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Cidades de Atendimento</label>
-                        <select 
-                            multiple
-                            className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 h-32"
-                            value={formData.cities}
-                            onChange={(e) => {
-                                const options = Array.from(e.target.selectedOptions, (option: HTMLOptionElement) => option.value);
-                                setFormData({...formData, cities: options});
-                            }}
-                        >
-                            {CITY_CONSTANTS.map(c => <option key={c} value={c}>{c}</option>)}
-                        </select>
-                        <p className="text-[10px] text-slate-400 mt-1">Segure Ctrl (ou Cmd) para selecionar várias.</p>
-                    </div>
-                    <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Especialidades</label>
-                        <select 
-                            multiple
-                            className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 h-32"
-                            value={formData.services}
-                            onChange={(e) => {
-                                const options = Array.from(e.target.selectedOptions, (option: HTMLOptionElement) => option.value);
-                                setFormData({...formData, services: options});
-                            }}
-                        >
-                            {SERVICE_CONSTANTS.map(s => <option key={s} value={s}>{s}</option>)}
-                        </select>
-                    </div>
-                </div>
-
-                {/* Document Upload Section */}
-                <div className="border-t border-slate-100 pt-6">
-                    <h3 className="font-bold text-slate-800 mb-2">Verificação de Documentos</h3>
-                    <p className="text-sm text-slate-500 mb-4">Envie foto do RG/CNH e Antecedentes Criminais para ganhar o selo de verificado.</p>
-                    
-                    <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:bg-slate-50 transition-colors">
-                        <input type="file" id="docs" className="hidden" onChange={handleDocUpload} />
-                        <label htmlFor="docs" className="cursor-pointer flex flex-col items-center">
-                            <span className="text-4xl mb-2">📂</span>
-                            <span className="font-bold text-blue-600">Clique para enviar documentos</span>
-                            <span className="text-xs text-slate-400">PDF, JPG ou PNG</span>
-                        </label>
-                    </div>
-                    
-                    {docsUploaded && (
-                        <div className="mt-3 bg-green-50 text-green-700 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 animate-in fade-in">
-                            ✓ Documentos enviados para análise.
-                        </div>
-                    )}
-                </div>
-
-                <div className="flex gap-4 pt-4">
-                    <button 
-                        type="button" 
-                        onClick={onCancel}
-                        className="w-1/3 py-3 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition-colors"
-                    >
-                        Cancelar
-                    </button>
-                    <button 
-                        type="submit"
-                        className="w-2/3 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 transition-colors"
-                    >
-                        Salvar Alterações
-                    </button>
-                </div>
-            </form>
-        </div>
-    );
-};
-
-const ProDashboardView: React.FC<{
-  pro: Professional;
-  bookings: Booking[];
-  plans: Plan[];
-  onUpdateStatus: (id: string, status: any) => void;
-  addToast: (msg: string, type: 'success' | 'error' | 'info') => void;
-  onAddCredits: (amount: number) => void;
-  onEditProfile: () => void;
-}> = ({ pro, bookings, plans, onUpdateStatus, addToast, onAddCredits, onEditProfile }) => {
-    const data = [
-        { name: 'Seg', jobs: 2 },
-        { name: 'Ter', jobs: 3 },
-        { name: 'Qua', jobs: 1 },
-        { name: 'Qui', jobs: 4 },
-        { name: 'Sex', jobs: 5 },
-        { name: 'Sab', jobs: 2 },
-    ];
-
-    const handleBuyCredits = () => {
-        // Simulação de compra
-        if(window.confirm("Comprar 100 créditos por R$ 29,90?")) {
-            onAddCredits(100);
-            addToast("Compra realizada! 100 créditos adicionados.", "success");
-        }
-    };
-
-    return (
-        <div className="max-w-7xl mx-auto px-4 py-8">
-            <div className="flex justify-between items-center mb-8">
-                <div>
-                   <h1 className="text-3xl font-black text-slate-800">Painel do Profissional</h1>
-                   <p className="text-slate-500">Bem-vindo de volta, {pro.name}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${pro.plan === SubscriptionPlan.PREMIUM ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
-                        Plano {pro.plan}
-                    </span>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                {/* Credit Wallet Card */}
-                <div className="bg-gradient-to-br from-slate-800 to-slate-900 text-white p-6 rounded-2xl shadow-lg border border-slate-700 relative overflow-hidden">
-                    <div className="relative z-10">
-                        <h3 className="text-xs font-bold text-slate-400 uppercase mb-1">Sua Carteira</h3>
-                        <div className="flex items-end gap-2 mb-4">
-                            <span className="text-4xl font-black">{pro.credits}</span>
-                            <span className="text-sm font-bold text-amber-400 mb-1">Créditos</span>
-                        </div>
-                        <button 
-                            onClick={handleBuyCredits}
-                            className="w-full bg-amber-500 text-amber-950 font-bold py-2 rounded-lg hover:bg-amber-400 transition-colors text-xs uppercase tracking-wider"
-                        >
-                            + Comprar Créditos
-                        </button>
-                    </div>
-                    <div className="absolute -right-4 -bottom-4 text-9xl opacity-10">🪙</div>
-                </div>
-
+    const renderVerification = () => (
+        <div className="space-y-6 animate-in fade-in">
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                    <h3 className="text-xs font-bold text-slate-500 uppercase mb-1">Saldo em Conta</h3>
-                    <p className="text-2xl font-black text-slate-800">R$ 1.250,00</p>
-                    <button className="text-blue-600 text-xs font-bold hover:underline mt-2">Solicitar Saque</button>
+                    <h3 className="text-xs font-bold text-slate-500 uppercase mb-1">Pendentes</h3>
+                    <p className="text-3xl font-black text-amber-500">{pendingVerifications.length}</p>
                 </div>
-                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                    <h3 className="text-xs font-bold text-slate-500 uppercase mb-1">Serviços Realizados</h3>
-                    <p className="text-2xl font-black text-slate-800">24</p>
-                    <span className="text-slate-400 text-xs">Este mês</span>
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                    <h3 className="text-xs font-bold text-slate-500 uppercase mb-1">Aprovados Hoje</h3>
+                    <p className="text-3xl font-black text-green-600">12</p>
                 </div>
-                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                    <h3 className="text-xs font-bold text-slate-500 uppercase mb-1">Avaliação Média</h3>
-                    <p className="text-2xl font-black text-slate-800 flex items-center gap-1">
-                        4.9 <span className="text-amber-400 text-lg">★</span>
-                    </p>
-                    <span className="text-slate-400 text-xs">Baseado em 124 reviews</span>
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                    <h3 className="text-xs font-bold text-slate-500 uppercase mb-1">Tempo Médio</h3>
+                    <p className="text-3xl font-black text-slate-800">4h</p>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* ... (Existing Charts and Bookings list code remains similar but condensed for brevity) ... */}
-                <div className="lg:col-span-2 space-y-6">
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                        <h3 className="font-bold text-lg mb-6">Desempenho Semanal</h3>
-                        <div className="h-64">
-                             <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={data}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                    <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                                    <YAxis axisLine={false} tickLine={false} allowDecimals={false} />
-                                    <Tooltip cursor={{fill: '#f1f5f9'}} />
-                                    <Bar dataKey="jobs" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={40} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
-                    {/* Bookings List Placeholder to save space - Logic is same as previous step */}
-                    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-                        <h3 className="font-bold text-lg text-slate-800 mb-4">Próximos Agendamentos</h3>
-                        <div className="text-slate-500 text-sm">Gerencie seus agendamentos confirmados aqui.</div>
-                        <div className="divide-y divide-slate-100">
-                            {bookings.length === 0 ? (
-                                <div className="p-8 text-center text-slate-500">Nenhum agendamento pendente.</div>
-                            ) : (
-                                bookings.map(booking => (
-                                    <div key={booking.id} className="p-6 flex items-center justify-between hover:bg-slate-50 transition-colors">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">
-                                                {booking.clientName.charAt(0)}
-                                            </div>
-                                            <div>
-                                                <h4 className="font-bold text-slate-800">{booking.clientName}</h4>
-                                                <p className="text-sm text-slate-500">{booking.service} • {booking.date}</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-3">
-                                            {booking.status === 'pending' && (
-                                                <>
-                                                    <button onClick={() => onUpdateStatus(booking.id, 'rejected')} className="text-red-500 hover:bg-red-50 p-2 rounded-lg text-sm font-bold">Recusar</button>
-                                                    <button onClick={() => onUpdateStatus(booking.id, 'accepted')} className="bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-green-600 shadow-sm">Aceitar</button>
-                                                </>
-                                            )}
-                                            {booking.status === 'accepted' && (
-                                                <span className="bg-amber-100 text-amber-700 px-3 py-1 rounded-lg text-xs font-bold animate-pulse">Aguardando Pagamento</span>
-                                            )}
-                                            {booking.status === 'paid' && (
-                                                <button onClick={() => onUpdateStatus(booking.id, 'completed')} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 shadow-sm">
-                                                    Finalizar Serviço
-                                                </button>
-                                            )}
-                                            {booking.status === 'completed' && (
-                                                <span className="bg-purple-100 text-purple-700 px-3 py-1 rounded-lg text-xs font-bold">Aguardando Cliente</span>
-                                            )}
-                                            {booking.status === 'finished' && (
-                                                <span className="bg-green-100 text-green-700 px-3 py-1 rounded-lg text-xs font-bold">Concluído e Pago</span>
-                                            )}
-                                            {booking.status === 'rejected' && (
-                                                <span className="bg-red-100 text-red-700 px-3 py-1 rounded-lg text-xs font-bold">Recusado</span>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                    </div>
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                <div className="p-6 border-b border-slate-100">
+                    <h3 className="font-bold text-lg">Fila de Análise de Documentos</h3>
                 </div>
-
-                <div className="space-y-6">
-                    <div className="bg-slate-900 text-white p-6 rounded-2xl relative overflow-hidden">
-                        <div className="relative z-10">
-                            <h3 className="font-bold text-lg mb-2">Dica do Dia</h3>
-                            <p className="text-slate-300 text-sm mb-4">Mantenha seu perfil atualizado com fotos recentes dos seus trabalhos para atrair mais clientes.</p>
-                            <button 
-                                onClick={onEditProfile}
-                                className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-sm font-bold backdrop-blur-sm transition-colors"
-                            >
-                                Editar Perfil
-                            </button>
-                        </div>
+                {pendingVerifications.length === 0 ? (
+                    <div className="p-10 text-center text-slate-500">
+                        <p>Nenhum documento pendente para análise. 🎉</p>
                     </div>
-                    
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                        <h3 className="font-bold text-lg mb-4 text-slate-800">Status da Conta</h3>
-                        <div className="space-y-4">
-                            <div className="flex justify-between items-center text-sm">
-                                <span className="text-slate-600">Verificação de Identidade</span>
-                                <span className="text-green-500 font-bold">✓ Aprovado</span>
-                            </div>
-                             <div className="flex justify-between items-center text-sm">
-                                <span className="text-slate-600">Teste de Capacitação</span>
-                                <span className="text-amber-500 font-bold">⚠ Pendente</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* NEW SECTION: Plans for Pro */}
-            <div className="mt-8 mb-8">
-                <h2 className="text-2xl font-bold text-slate-800 mb-6">Planos e Assinaturas</h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {plans.map(plan => {
-                        const isCurrent = pro.plan.toLowerCase() === plan.id;
-                        return (
-                            <div key={plan.id} className={`p-6 rounded-2xl border-2 transition-all ${isCurrent ? 'border-blue-600 bg-blue-50 shadow-md' : 'border-slate-200 bg-white hover:border-blue-300'}`}>
-                                <div className="flex justify-between items-start mb-4">
-                                    <div>
-                                        <h3 className="font-bold text-lg text-slate-800">{plan.name}</h3>
-                                        {isCurrent && <span className="text-xs font-bold text-blue-600 uppercase bg-blue-100 px-2 py-1 rounded mt-1 inline-block">Atual</span>}
+                ) : (
+                    <div className="divide-y divide-slate-100">
+                        {pendingVerifications.map(item => (
+                            <div key={item.id} className="p-6 flex flex-col md:flex-row gap-6">
+                                <div className="w-full md:w-48 h-32 bg-slate-100 rounded-lg overflow-hidden shrink-0 border border-slate-200">
+                                    <img src={item.docUrl} alt="Documento" className="w-full h-full object-cover hover:scale-110 transition-transform cursor-zoom-in" />
+                                </div>
+                                <div className="flex-grow">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <div>
+                                            <h4 className="font-bold text-lg text-slate-800">{item.name}</h4>
+                                            <span className="text-xs font-bold text-slate-500 uppercase bg-slate-100 px-2 py-1 rounded">{item.docType}</span>
+                                        </div>
+                                        <span className="text-xs text-slate-400 font-medium">{item.date}</span>
                                     </div>
-                                    <div className="text-right">
-                                        <div className="text-xl font-black text-slate-800">R$ {plan.price}</div>
-                                        <div className="text-xs text-slate-500">{plan.period}</div>
+                                    <p className="text-sm text-slate-600 mb-4">
+                                        Solicitação de verificação de identidade. Verifique se a foto corresponde ao perfil e se os dados estão legíveis.
+                                    </p>
+                                    <div className="flex gap-3">
+                                        <button onClick={() => handleVerify(item.id, true)} className="px-4 py-2 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition-colors shadow-sm text-sm">
+                                            ✓ Aprovar Documento
+                                        </button>
+                                        <button onClick={() => handleVerify(item.id, false)} className="px-4 py-2 bg-red-100 text-red-600 font-bold rounded-lg hover:bg-red-200 transition-colors text-sm">
+                                            ✕ Rejeitar
+                                        </button>
                                     </div>
                                 </div>
-                                
-                                <ul className="space-y-3 mb-6">
-                                    {plan.features.map((feat, i) => (
-                                        <li key={i} className="text-sm text-slate-600 flex items-start gap-2">
-                                            <span className="text-green-500 font-bold">✓</span> {feat}
-                                        </li>
-                                    ))}
-                                </ul>
-
-                                <button 
-                                    className={`w-full py-3 rounded-xl font-bold text-sm transition-colors ${
-                                        isCurrent 
-                                        ? 'bg-blue-600 text-white opacity-90 cursor-default' 
-                                        : 'bg-white border-2 border-slate-200 text-slate-600 hover:border-blue-600 hover:text-blue-600'
-                                    }`}
-                                >
-                                    {isCurrent ? 'Seu Plano Atual' : 'Fazer Upgrade'}
-                                </button>
                             </div>
-                        );
-                    })}
-                </div>
+                        ))}
+                    </div>
+                )}
             </div>
+        </div>
+    );
+
+    return (
+        <div className="max-w-7xl mx-auto px-4 py-8 flex flex-col md:flex-row gap-8 min-h-screen">
+            {/* Sidebar Navigation */}
+            <aside className="w-full md:w-64 shrink-0">
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 sticky top-24">
+                    <h2 className="text-xs font-bold text-slate-400 uppercase mb-4 px-4">Menu Admin</h2>
+                    <nav className="space-y-1">
+                        <button onClick={() => setActiveTab('overview')} className={`w-full text-left px-4 py-3 rounded-xl font-bold text-sm transition-colors ${activeTab === 'overview' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-50'}`}>
+                            📊 Visão Geral
+                        </button>
+                        <button onClick={() => setActiveTab('users')} className={`w-full text-left px-4 py-3 rounded-xl font-bold text-sm transition-colors ${activeTab === 'users' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-50'}`}>
+                            👥 Usuários
+                        </button>
+                        <button onClick={() => setActiveTab('financial')} className={`w-full text-left px-4 py-3 rounded-xl font-bold text-sm transition-colors ${activeTab === 'financial' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-50'}`}>
+                            💰 Financeiro
+                        </button>
+                        <button onClick={() => setActiveTab('plans')} className={`w-full text-left px-4 py-3 rounded-xl font-bold text-sm transition-colors ${activeTab === 'plans' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-50'}`}>
+                            💎 Planos
+                        </button>
+                        <button onClick={() => setActiveTab('verification')} className={`w-full text-left px-4 py-3 rounded-xl font-bold text-sm transition-colors ${activeTab === 'verification' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-50'}`}>
+                            📑 Verificação
+                        </button>
+                    </nav>
+                </div>
+            </aside>
+
+            {/* Main Content Area */}
+            <main className="flex-grow">
+                <header className="mb-8">
+                    <h1 className="text-3xl font-black text-slate-800">
+                        {activeTab === 'overview' && 'Dashboard'}
+                        {activeTab === 'users' && 'Gestão de Usuários'}
+                        {activeTab === 'financial' && 'Controle Financeiro'}
+                        {activeTab === 'plans' && 'Planos de Assinatura'}
+                        {activeTab === 'verification' && 'Verificação de Documentos'}
+                    </h1>
+                </header>
+                
+                {activeTab === 'overview' && renderOverview()}
+                {activeTab === 'users' && renderUsers()}
+                {activeTab === 'financial' && renderFinancial()}
+                {activeTab === 'plans' && renderPlans()}
+                {activeTab === 'verification' && renderVerification()}
+            </main>
+
+            {isModalOpen && <PlanEditorModal plan={editingPlan} onClose={() => setIsModalOpen(false)} onSave={handleSavePlan} />}
         </div>
     );
 };
 
 const App: React.FC = () => {
-    const [view, setView] = useState('home');
     const [userRole, setUserRole] = useState<UserRole>('guest');
-    const [toasts, setToasts] = useState<Toast[]>([]);
-    const [currentUser, setCurrentUser] = useState<Professional | null>(null);
-    const [requests, setRequests] = useState<ServiceRequest[]>(INITIAL_REQUESTS);
-    // Updated: Initialize with mock bookings so payment flow can be tested immediately
-    const [bookings, setBookings] = useState<Booking[]>(INITIAL_BOOKINGS);
-    const [plans, setPlans] = useState<Plan[]>(INITIAL_PLANS);
-    
-    // Selection state
+    const [view, setView] = useState('home');
+    const [toasts, setToasts] = useState<{id: number, message: string, type: 'success' | 'error' | 'info'}[]>([]);
     const [selectedPro, setSelectedPro] = useState<Professional | null>(null);
     const [selectedRequest, setSelectedRequest] = useState<ServiceRequest | null>(null);
-    
-    // Helper to add toast
-    const addToast = (msg: string, type: 'success' | 'error' | 'info') => {
-        const newToast = { id: Date.now(), message: msg, type };
-        setToasts(prev => [...prev, newToast]);
-        setTimeout(() => setToasts(prev => prev.filter(t => t.id !== newToast.id)), 3000);
+    const [currentPro, setCurrentPro] = useState<Professional | null>(null); // State for logged-in professional
+    const [plans, setPlans] = useState<Plan[]>(INITIAL_PLANS);
+    const [requests, setRequests] = useState<ServiceRequest[]>(INITIAL_REQUESTS);
+    const [bookings, setBookings] = useState<Booking[]>(INITIAL_BOOKINGS);
+
+    const addToast = (message: string, type: 'success' | 'error' | 'info') => {
+        const id = Date.now();
+        setToasts(prev => [...prev, { id, message, type }]);
+        setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3000);
     };
 
     const removeToast = (id: number) => setToasts(prev => prev.filter(t => t.id !== id));
 
-    const handleNavigate = (newView: string) => setView(newView);
+    const handleLogin = (role: UserRole) => {
+        setUserRole(role);
+        
+        if (role === 'pro') {
+            setCurrentPro(MOCK_PROS[0]); // Demo: Log in as first mock pro
+            setView('pro-dashboard');
+        } else if (role === 'admin') {
+            setView('admin-dashboard');
+        } else {
+            setView('client-dashboard');
+        }
+
+        addToast(`Bem-vindo, ${role === 'admin' ? 'Admin' : role === 'pro' ? 'Profissional' : 'Cliente'}!`, 'success');
+    };
 
     const handleLogout = () => {
         setUserRole('guest');
-        setCurrentUser(null);
+        setCurrentPro(null);
         setView('home');
-        addToast('Logout realizado com sucesso', 'info');
-    };
-    
-    // Request creation logic (Centralized)
-    const handleRequestService = (reqData: any) => {
-        const newRequest: ServiceRequest = {
-            ...reqData,
-            id: `req_${Date.now()}`,
-            status: 'open',
-            clientId: 'me',
-            createdAt: new Date().toISOString(),
-            unlockedBy: [] // Auto-initialize empty array
-        };
-        setRequests([newRequest, ...requests]);
-        addToast('Pedido publicado com sucesso!', 'success');
-    };
-    
-    // Login Mock
-    const loginAs = (role: UserRole) => {
-        setUserRole(role);
-        if (role === 'pro') {
-            setCurrentUser(MOCK_PROS[0]);
-            setView('pro-dashboard');
-        } else if (role === 'client') {
-            setView('client-dashboard');
-        } else if (role === 'admin') {
-            setView('admin-dashboard');
-        }
-        addToast(`Logado como ${role}`, 'success');
+        addToast('Você saiu do sistema.', 'info');
     };
 
-    // Render logic
-    const renderContent = () => {
+    const handleNavigate = (target: string) => {
+        setView(target);
+        window.scrollTo(0,0);
+    };
+
+    const handleViewProfile = (pro: Professional) => {
+        setSelectedPro(pro);
+        setView('profile');
+        window.scrollTo(0,0);
+    };
+
+    const handleViewRequest = (req: ServiceRequest) => {
+        setSelectedRequest(req);
+        setView('request-details');
+        window.scrollTo(0,0);
+    };
+
+    const handleRequestService = (reqData: any) => {
+        const newReq: ServiceRequest = {
+            id: `r${Date.now()}`,
+            clientId: 'me',
+            status: 'open',
+            createdAt: new Date().toISOString(),
+            unlockedBy: [],
+            ...reqData
+        };
+        setRequests([newReq, ...requests]);
+        addToast('Pedido publicado com sucesso!', 'success');
+    };
+
+    const handleUpdateBookingStatus = (id: string, status: any) => {
+        setBookings(bookings.map(b => b.id === id ? { ...b, status } : b));
+    };
+    
+    // Pro Features
+    const handleUnlockContact = (reqId: string, cost: number) => {
+        if (!currentPro) return;
+        if (currentPro.credits < cost) {
+            addToast("Saldo insuficiente de créditos.", "error");
+            return;
+        }
+        
+        // Deduct credits locally
+        setCurrentPro({ ...currentPro, credits: currentPro.credits - cost });
+        
+        // Unlock request
+        setRequests(requests.map(r => 
+            r.id === reqId ? { ...r, unlockedBy: [...r.unlockedBy, currentPro.id] } : r
+        ));
+        
+        addToast("Contato desbloqueado com sucesso!", "success");
+    };
+
+    const handleAddCredits = () => {
+        if (!currentPro) return;
+        setCurrentPro({ ...currentPro, credits: currentPro.credits + 100 });
+        addToast("100 Créditos adicionados (Demo)", "success");
+    };
+
+    const handleUpdateProfile = (updatedPro: Professional) => {
+        setCurrentPro(updatedPro);
+        addToast("Perfil atualizado com sucesso!", "success");
+    };
+
+    const renderView = () => {
         switch(view) {
-            case 'home':
-                return <ClientHomeView 
-                    addToast={addToast} 
-                    onNavigate={handleNavigate} 
-                    plans={plans} 
-                    onViewProfile={(pro) => { setSelectedPro(pro); handleNavigate('profile'); }}
-                    onRequestService={handleRequestService}
-                />;
-            case 'professionals':
-                return <ProfessionalsListView 
-                    addToast={addToast} 
-                    onViewProfile={(pro) => { setSelectedPro(pro); handleNavigate('profile'); }}
-                />;
-            case 'profile':
-                if (!selectedPro) return <div onClick={() => handleNavigate('professionals')}>Voltar</div>;
-                return <ProfessionalProfileView 
-                    pro={selectedPro} 
-                    onBack={() => handleNavigate('professionals')} 
-                    addToast={addToast} 
-                />;
-            case 'requests-list':
-                return <ServiceRequestsListView 
+            case 'home': return <ClientHomeView addToast={addToast} onNavigate={handleNavigate} plans={plans} onViewProfile={handleViewProfile} onRequestService={handleRequestService} />;
+            case 'professionals': return <ProfessionalsListView addToast={addToast} onViewProfile={handleViewProfile} />;
+            case 'profile': return selectedPro ? <ProfessionalProfileView pro={selectedPro} onBack={() => setView('professionals')} addToast={addToast} /> : <ProfessionalsListView addToast={addToast} onViewProfile={handleViewProfile} />;
+            case 'requests-list': return <ServiceRequestsListView requests={requests} onViewRequest={handleViewRequest} addToast={addToast} />;
+            case 'request-details': return selectedRequest ? (
+                <ServiceRequestDetailsView 
+                    request={selectedRequest} 
+                    onBack={() => setView('requests-list')} 
+                    addToast={addToast}
+                    userRole={userRole}
+                    currentPro={currentPro}
+                    onUnlockContact={handleUnlockContact}
+                />
+            ) : (
+                <ServiceRequestsListView requests={requests} onViewRequest={handleViewRequest} addToast={addToast} />
+            );
+            case 'client-dashboard': return <ClientDashboardView bookings={bookings} requests={requests} onRequestService={handleRequestService} addToast={addToast} onUpdateBookingStatus={handleUpdateBookingStatus} />;
+            case 'admin-dashboard': return <AdminDashboardView plans={plans} onUpdatePlans={setPlans} addToast={addToast} />;
+            case 'pro-dashboard': return currentPro ? (
+                <ProDashboardView 
+                    pro={currentPro} 
                     requests={requests} 
-                    onViewRequest={(req) => { setSelectedRequest(req); handleNavigate('request-detail'); }}
-                    addToast={addToast}
-                />;
-            case 'request-detail':
-                if (!selectedRequest) return null;
-                return <ServiceRequestDetailView 
-                    req={selectedRequest}
-                    onBack={() => handleNavigate('requests-list')}
-                    addToast={addToast}
-                    currentPro={currentUser}
-                    onUnlockContact={(reqId, cost) => {
-                         if(currentUser && currentUser.credits >= cost) {
-                             const updatedRequests = requests.map(r => r.id === reqId ? {...r, unlockedBy: [...r.unlockedBy, currentUser.id]} : r);
-                             setRequests(updatedRequests);
-                             setSelectedRequest(updatedRequests.find(r => r.id === reqId) || null);
-                             setCurrentUser({...currentUser, credits: currentUser.credits - cost});
-                             addToast('Contato desbloqueado!', 'success');
-                         } else {
-                             addToast('Saldo insuficiente', 'error');
-                         }
-                    }}
-                />;
-            case 'client-dashboard':
-                return <ClientDashboardView 
                     bookings={bookings} 
-                    requests={requests.filter(r => r.clientId === 'me' || r.clientId === 'c1')} 
-                    onRequestService={handleRequestService} 
-                    addToast={addToast} 
-                    onNavigate={handleNavigate}
-                    onUpdateBookingStatus={(id, status) => {
-                        setBookings(prev => prev.map(b => b.id === id ? {...b, status} : b));
-                    }}
-                />;
-            case 'pro-dashboard':
-                if (!currentUser) return null;
-                return <ProDashboardView 
-                    pro={currentUser} 
-                    bookings={bookings} 
-                    plans={plans} 
-                    onUpdateStatus={(id, status) => setBookings(prev => prev.map(b => b.id === id ? {...b, status} : b))} 
-                    addToast={addToast} 
-                    onAddCredits={(amount) => setCurrentUser({...currentUser, credits: currentUser.credits + amount})}
-                    onEditProfile={() => handleNavigate('pro-edit')}
-                />;
-            case 'pro-edit':
-                 if (!currentUser) return null;
-                 return <ProProfileEditor 
-                    pro={currentUser}
-                    onSave={(updated) => {
-                        setCurrentUser(updated);
-                        handleNavigate('pro-dashboard');
-                        addToast('Perfil atualizado', 'success');
-                    }}
-                    onCancel={() => handleNavigate('pro-dashboard')}
-                 />
-            case 'admin-dashboard':
-                return <AdminDashboardView plans={plans} onUpdatePlans={setPlans} addToast={addToast} />;
-            case 'login':
-                return (
-                    <div className="flex flex-col items-center justify-center h-[50vh] gap-4">
-                        <h2 className="text-2xl font-bold">Login Demo</h2>
-                        <div className="flex gap-4">
-                            <button onClick={() => { loginAs('client'); handleNavigate('client-dashboard'); }} className="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold">Sou Cliente</button>
-                            <button onClick={() => { loginAs('pro'); handleNavigate('pro-dashboard'); }} className="bg-amber-600 text-white px-6 py-3 rounded-xl font-bold">Sou Profissional</button>
-                            <button onClick={() => { loginAs('admin'); handleNavigate('admin-dashboard'); }} className="bg-slate-800 text-white px-6 py-3 rounded-xl font-bold">Sou Admin</button>
-                        </div>
+                    onUnlockContact={handleUnlockContact} 
+                    onUpdateBookingStatus={handleUpdateBookingStatus} 
+                    onAddCredits={handleAddCredits}
+                    onEditProfile={handleUpdateProfile}
+                />
+            ) : (
+                <div className="p-10 text-center">Erro: Nenhum profissional logado.</div>
+            );
+            case 'login': return (
+                <div className="max-w-md mx-auto mt-20 p-8 bg-white rounded-2xl shadow-lg text-center border border-slate-100">
+                    <h2 className="text-2xl font-bold mb-6 text-slate-800">Login de Acesso</h2>
+                    <div className="space-y-4">
+                        <button onClick={() => handleLogin('client')} className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors">Entrar como Cliente</button>
+                        <button onClick={() => handleLogin('pro')} className="w-full py-3 bg-amber-500 text-white font-bold rounded-xl hover:bg-amber-600 transition-colors">Entrar como Profissional</button>
+                        <button onClick={() => handleLogin('admin')} className="w-full py-3 bg-slate-800 text-white font-bold rounded-xl hover:bg-slate-900 transition-colors">Entrar como Admin</button>
                     </div>
-                );
-            case 'register':
-                return (
-                     <div className="flex flex-col items-center justify-center h-[50vh] gap-4">
-                        <h2 className="text-2xl font-bold">Cadastro</h2>
-                        <p>Simulação de cadastro.</p>
-                        <button onClick={() => handleNavigate('login')} className="text-blue-600 font-bold">Ir para Login</button>
-                     </div>
-                );
-            default:
-                return <div className="p-8 text-center">Página não encontrada (404)</div>;
+                </div>
+            );
+            case 'register': return (
+                <div className="max-w-md mx-auto mt-20 p-8 bg-white rounded-2xl shadow-lg text-center border border-slate-100">
+                     <h2 className="text-2xl font-bold mb-4 text-slate-800">Criar Conta</h2>
+                     <button onClick={() => handleLogin('client')} className="w-full py-3 bg-green-600 text-white font-bold rounded-xl mb-4 hover:bg-green-700 transition-colors">Criar Conta Grátis</button>
+                     <button onClick={() => setView('home')} className="text-slate-500 font-bold hover:underline">Voltar</button>
+                </div>
+            );
+            default: return <ClientHomeView addToast={addToast} onNavigate={handleNavigate} plans={plans} onViewProfile={handleViewProfile} onRequestService={handleRequestService} />;
         }
     };
 
     return (
         <Layout userRole={userRole} onLogout={handleLogout} onNavigate={handleNavigate}>
-            {renderContent()}
+            {renderView()}
             <ToastContainer toasts={toasts} removeToast={removeToast} />
         </Layout>
     );
