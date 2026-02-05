@@ -6,7 +6,7 @@ import { MOCK_PROS, SERVICES as SERVICE_CONSTANTS, CITIES as CITY_CONSTANTS } fr
 import { getSmartServiceEstimate } from './services/geminiService';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell } from 'recharts';
 
-// --- MOCK INITIAL DATA FOR REQUESTS ---
+// --- MOCK INITIAL DATA ---
 const INITIAL_REQUESTS: ServiceRequest[] = [
     { 
         id: 'r1', 
@@ -43,6 +43,31 @@ const INITIAL_REQUESTS: ServiceRequest[] = [
         createdAt: new Date(Date.now() - 43200000).toISOString(),
         contactPhone: '13977777777',
         unlockedBy: []
+    }
+];
+
+const INITIAL_BOOKINGS: Booking[] = [
+    {
+        id: 'b1',
+        proId: '1',
+        clientId: 'me', // Associado ao usuário logado
+        clientName: 'Você',
+        proName: 'Carlos Oliveira',
+        service: 'Instalação Elétrica',
+        status: 'accepted', // Status que libera o pagamento
+        date: '2024-05-25',
+        price: 150
+    },
+    {
+        id: 'b2',
+        proId: '2',
+        clientId: 'me',
+        clientName: 'Você',
+        proName: 'Ana Maria Silva',
+        service: 'Limpeza Pesada',
+        status: 'pending',
+        date: '2024-05-28',
+        price: 200
     }
 ];
 
@@ -1367,6 +1392,54 @@ const ClientHomeView: React.FC<{
           </div>
        </div>
 
+       {/* Subscription Plans Section - Persuasive */}
+       <section className="bg-slate-900 rounded-3xl p-8 md:p-16 text-white relative overflow-hidden mb-16">
+          {/* Decorative Background Elements */}
+          <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/20 blur-[100px] rounded-full -mr-48 -mt-48 pointer-events-none"></div>
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-600/20 blur-[80px] rounded-full -ml-32 -mb-32 pointer-events-none"></div>
+
+          <div className="relative z-10 text-center max-w-3xl mx-auto mb-12">
+            <h2 className="text-3xl md:text-5xl font-black mb-6 leading-tight">
+              Profissionalize seu serviço e <span className="text-blue-500">multiplique seus clientes</span>
+            </h2>
+            <p className="text-slate-400 text-lg">
+              Junte-se a centenas de profissionais no Vale do Ribeira que estão transformando seus negócios. Escolha o plano que cabe no seu bolso e comece hoje.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative z-10">
+            {plans.map(plan => (
+               <div key={plan.id} className={`p-8 rounded-3xl flex flex-col relative transition-all duration-300 ${plan.recommended ? 'bg-blue-600 text-white shadow-2xl scale-105 z-20 ring-4 ring-blue-500/30' : 'bg-slate-800 text-slate-300 border border-slate-700 hover:border-blue-500/50'}`}>
+                   {plan.recommended && <span className="absolute -top-4 left-1/2 -translate-x-1/2 bg-white text-blue-900 text-xs font-black px-4 py-1 rounded-full uppercase tracking-wider shadow-lg">Mais Popular</span>}
+                   
+                   <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
+                   <div className="flex items-baseline gap-1 mb-6">
+                     <span className="text-4xl font-black">{plan.price}</span>
+                     <span className="text-sm opacity-70">/{plan.period}</span>
+                   </div>
+                   
+                   <p className="text-sm opacity-80 mb-8 pb-8 border-b border-white/10 min-h-[3rem]">{plan.fee}</p>
+                   
+                   <ul className="space-y-4 mb-8 flex-grow">
+                       {plan.features.map((feat, i) => (
+                           <li key={i} className="flex items-start gap-3 text-sm">
+                               <span className={`font-bold ${plan.recommended ? 'text-white' : 'text-blue-500'}`}>✓</span>
+                               <span>{feat}</span>
+                           </li>
+                       ))}
+                   </ul>
+
+                   <button 
+                     onClick={() => onNavigate('register')}
+                     className={`w-full py-4 rounded-xl font-bold transition-all ${plan.recommended ? 'bg-white text-blue-900 hover:bg-slate-100' : 'bg-blue-600/10 text-blue-400 hover:bg-blue-600 hover:text-white'}`}
+                   >
+                       Começar Agora
+                   </button>
+               </div>
+            ))}
+          </div>
+       </section>
+
        {isRequestModalOpen && (
            <ServiceRequestModal 
                 onClose={() => setIsRequestModalOpen(false)} 
@@ -2016,6 +2089,48 @@ const ProDashboardView: React.FC<{
                     </div>
                 </div>
             </div>
+
+            {/* NEW SECTION: Plans for Pro */}
+            <div className="mt-8 mb-8">
+                <h2 className="text-2xl font-bold text-slate-800 mb-6">Planos e Assinaturas</h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {plans.map(plan => {
+                        const isCurrent = pro.plan.toLowerCase() === plan.id;
+                        return (
+                            <div key={plan.id} className={`p-6 rounded-2xl border-2 transition-all ${isCurrent ? 'border-blue-600 bg-blue-50 shadow-md' : 'border-slate-200 bg-white hover:border-blue-300'}`}>
+                                <div className="flex justify-between items-start mb-4">
+                                    <div>
+                                        <h3 className="font-bold text-lg text-slate-800">{plan.name}</h3>
+                                        {isCurrent && <span className="text-xs font-bold text-blue-600 uppercase bg-blue-100 px-2 py-1 rounded mt-1 inline-block">Atual</span>}
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-xl font-black text-slate-800">R$ {plan.price}</div>
+                                        <div className="text-xs text-slate-500">{plan.period}</div>
+                                    </div>
+                                </div>
+                                
+                                <ul className="space-y-3 mb-6">
+                                    {plan.features.map((feat, i) => (
+                                        <li key={i} className="text-sm text-slate-600 flex items-start gap-2">
+                                            <span className="text-green-500 font-bold">✓</span> {feat}
+                                        </li>
+                                    ))}
+                                </ul>
+
+                                <button 
+                                    className={`w-full py-3 rounded-xl font-bold text-sm transition-colors ${
+                                        isCurrent 
+                                        ? 'bg-blue-600 text-white opacity-90 cursor-default' 
+                                        : 'bg-white border-2 border-slate-200 text-slate-600 hover:border-blue-600 hover:text-blue-600'
+                                    }`}
+                                >
+                                    {isCurrent ? 'Seu Plano Atual' : 'Fazer Upgrade'}
+                                </button>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
         </div>
     );
 };
@@ -2026,7 +2141,8 @@ const App: React.FC = () => {
     const [toasts, setToasts] = useState<Toast[]>([]);
     const [currentUser, setCurrentUser] = useState<Professional | null>(null);
     const [requests, setRequests] = useState<ServiceRequest[]>(INITIAL_REQUESTS);
-    const [bookings, setBookings] = useState<Booking[]>([]);
+    // Updated: Initialize with mock bookings so payment flow can be tested immediately
+    const [bookings, setBookings] = useState<Booking[]>(INITIAL_BOOKINGS);
     const [plans, setPlans] = useState<Plan[]>(INITIAL_PLANS);
     
     // Selection state
@@ -2135,7 +2251,7 @@ const App: React.FC = () => {
                     addToast={addToast} 
                     onNavigate={handleNavigate}
                     onUpdateBookingStatus={(id, status) => {
-                        setBookings(bookings.map(b => b.id === id ? {...b, status} : b));
+                        setBookings(prev => prev.map(b => b.id === id ? {...b, status} : b));
                     }}
                 />;
             case 'pro-dashboard':
@@ -2144,7 +2260,7 @@ const App: React.FC = () => {
                     pro={currentUser} 
                     bookings={bookings} 
                     plans={plans} 
-                    onUpdateStatus={(id, status) => setBookings(bookings.map(b => b.id === id ? {...b, status} : b))} 
+                    onUpdateStatus={(id, status) => setBookings(prev => prev.map(b => b.id === id ? {...b, status} : b))} 
                     addToast={addToast} 
                     onAddCredits={(amount) => setCurrentUser({...currentUser, credits: currentUser.credits + amount})}
                     onEditProfile={() => handleNavigate('pro-edit')}
