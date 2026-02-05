@@ -1,0 +1,7 @@
+{
+  "name": " Vale Conecta v.3",
+  "description": "Um marketplace regional de serviços domésticos e reparos que conecta profissionais locais a clientes de forma segura e eficiente.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
