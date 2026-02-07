@@ -1363,6 +1363,45 @@ const AdminDashboard: React.FC<{
                                 </div>
                             </div>
                         )}
+
+                        {activeTab === 'plans' && (
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                {plans.map(plan => (
+                                    <div key={plan.id} className={`bg-white rounded-2xl p-6 shadow-sm border relative transition-all hover:shadow-md ${plan.highlight ? 'border-blue-500 ring-4 ring-blue-50 scale-105 z-10' : 'border-slate-200'}`}>
+                                        {plan.highlight && (
+                                            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">
+                                                Destaque
+                                            </div>
+                                        )}
+                                        <div className="flex justify-between items-start mb-4">
+                                            <h3 className="font-bold text-slate-800 text-lg">{plan.name}</h3>
+                                            <button 
+                                                onClick={() => setEditingPlan(plan)}
+                                                className="text-slate-400 hover:text-blue-600 p-1 rounded hover:bg-blue-50 transition-colors"
+                                                title="Editar Plano"
+                                            >
+                                                ✏️
+                                            </button>
+                                        </div>
+                                        <p className="text-3xl font-black text-slate-800 mb-4">{plan.price}</p>
+                                        <ul className="space-y-3 mb-8 min-h-[120px]">
+                                            {plan.features.map((feat, idx) => (
+                                                <li key={idx} className="text-sm text-slate-600 flex items-start gap-2">
+                                                    <span className="text-green-500 font-bold mt-0.5">✓</span>
+                                                    <span className="flex-1">{feat}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                        <button 
+                                            onClick={() => setEditingPlan(plan)}
+                                            className={`w-full py-3 rounded-xl font-bold transition-colors shadow-sm ${plan.highlight ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                                        >
+                                            Editar Detalhes
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -1541,6 +1580,82 @@ const App: React.FC = () => {
                              {pros.slice(0, 4).map((pro, idx) => (
                                 <ProCard key={pro.id} pro={pro} onSelect={(id) => console.log(id)} rank={idx + 1} />
                              ))}
+                        </div>
+
+                        {/* Seção "Por que fechar pelo Vale Conecta?" */}
+                        <div className="mb-20 bg-white rounded-3xl p-8 md:p-12 shadow-sm border border-slate-100">
+                            <div className="text-center mb-12">
+                                <h2 className="text-3xl font-black text-slate-800 mb-4">
+                                    Por que fechar pelo <span className="text-blue-600">Vale Conecta</span>?
+                                </h2>
+                                <p className="text-slate-500 max-w-2xl mx-auto">
+                                    Criamos um ambiente seguro onde quem contrata tem garantia e quem trabalha tem certeza do recebimento. Veja as vantagens de manter tudo dentro da plataforma:
+                                </p>
+                            </div>
+
+                            <div className="grid md:grid-cols-2 gap-8 md:gap-12">
+                                {/* Coluna Cliente */}
+                                <div>
+                                    <div className="flex items-center gap-3 mb-6 bg-blue-50 w-fit px-4 py-2 rounded-xl">
+                                        <span className="text-2xl">👤</span>
+                                        <h3 className="font-bold text-slate-800 text-lg">Para quem contrata</h3>
+                                    </div>
+                                    <ul className="space-y-6">
+                                        <li className="flex gap-4">
+                                            <div className="shrink-0 w-6 h-6 rounded-full bg-green-100 text-green-600 flex items-center justify-center font-bold text-xs mt-0.5">✓</div>
+                                            <div>
+                                                <h4 className="font-bold text-slate-800">Pagamento Protegido (Escrow)</h4>
+                                                <p className="text-sm text-slate-500 mt-1">Seu dinheiro fica no cofre do App e só vai para o profissional quando você confirmar que o serviço foi feito.</p>
+                                            </div>
+                                        </li>
+                                        <li className="flex gap-4">
+                                            <div className="shrink-0 w-6 h-6 rounded-full bg-green-100 text-green-600 flex items-center justify-center font-bold text-xs mt-0.5">✓</div>
+                                            <div>
+                                                <h4 className="font-bold text-slate-800">Garantia contra Imprevistos</h4>
+                                                <p className="text-sm text-slate-500 mt-1">Se o profissional não aparecer ou houver problemas, a plataforma devolve seu valor integralmente.</p>
+                                            </div>
+                                        </li>
+                                        <li className="flex gap-4">
+                                            <div className="shrink-0 w-6 h-6 rounded-full bg-green-100 text-green-600 flex items-center justify-center font-bold text-xs mt-0.5">✓</div>
+                                            <div>
+                                                <h4 className="font-bold text-slate-800">Parcele em até 12x</h4>
+                                                <p className="text-sm text-slate-500 mt-1">Facilite o pagamento de reformas e reparos maiores usando seu cartão de crédito.</p>
+                                            </div>
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                {/* Coluna Profissional */}
+                                <div>
+                                    <div className="flex items-center gap-3 mb-6 bg-yellow-50 w-fit px-4 py-2 rounded-xl">
+                                        <span className="text-2xl">🛠️</span>
+                                        <h3 className="font-bold text-slate-800 text-lg">Para o Profissional</h3>
+                                    </div>
+                                    <ul className="space-y-6">
+                                        <li className="flex gap-4">
+                                            <div className="shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xs mt-0.5">✓</div>
+                                            <div>
+                                                <h4 className="font-bold text-slate-800">Fim dos Calotes</h4>
+                                                <p className="text-sm text-slate-500 mt-1">O cliente paga antes. Você tem a certeza absoluta de que vai receber assim que terminar o trabalho.</p>
+                                            </div>
+                                        </li>
+                                        <li className="flex gap-4">
+                                            <div className="shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xs mt-0.5">✓</div>
+                                            <div>
+                                                <h4 className="font-bold text-slate-800">Reputação Verificada</h4>
+                                                <p className="text-sm text-slate-500 mt-1">Serviços fechados pelo App geram avaliações oficiais. Quem tem mais estrelas cobra mais caro.</p>
+                                            </div>
+                                        </li>
+                                        <li className="flex gap-4">
+                                            <div className="shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xs mt-0.5">✓</div>
+                                            <div>
+                                                <h4 className="font-bold text-slate-800">Organização Automática</h4>
+                                                <p className="text-sm text-slate-500 mt-1">Histórico de clientes, recibos e agenda tudo em um só lugar. Profissionalize sua gestão.</p>
+                                            </div>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
                         </div>
 
                         <div className="mb-16">
